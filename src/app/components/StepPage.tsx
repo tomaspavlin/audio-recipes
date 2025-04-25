@@ -23,7 +23,6 @@ export default function StepPage({
     } = useSpeechRecognition({});
 
     const toggleListening = () => {
-        console.log("baf");
         if (listening) {
             SpeechRecognition.stopListening();
         } else {
@@ -156,6 +155,7 @@ export default function StepPage({
             <Button
                 variant='contained'
                 onClick={toggleListening}
+                disabled={!browserSupportsSpeechRecognition}
                 sx={{
                     mb: 4,
                     bgcolor: listening ? "#4CAF50" : "#E87C4B",
