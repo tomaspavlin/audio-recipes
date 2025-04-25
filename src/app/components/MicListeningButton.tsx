@@ -1,29 +1,41 @@
 import { Mic } from "@mui/icons-material";
-import { Box, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 
 type Props = {
     listening: boolean;
     onClick: () => void;
+    disabled?: boolean;
 };
 
 export default function MicListeningButton({
     listening,
-    onClick: toggleListening
+    onClick: toggleListening,
+    disabled
 }: Props) {
-    return (
+    const size = 32;
+    return disabled ? null : (
         <Box
             sx={{
                 display: "flex",
-                flexDirection: "column",
+                flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 2
             }}>
+            {/* <Typography
+                variant='caption'
+                sx={{
+                    opacity: listening ? 1 : 0.5,
+                    fontSize: "16px",
+                    color: "#555"
+                }}>
+                {listening ? "" : "Tap to listen"}
+            </Typography> */}
             <Box
                 sx={{
                     position: "relative",
-                    width: 100,
-                    height: 100,
+                    width: size,
+                    height: size,
                     borderRadius: "50%",
                     display: "flex",
                     flexDirection: "column",
@@ -46,20 +58,11 @@ export default function MicListeningButton({
                         }
                     },
                     border: "2px solid #E87C4B",
-                    color: "#E87C4B"
+                    borderColor: "inherit"
                 }}
                 onClick={toggleListening}>
-                <Mic fontSize='large' />
+                <Mic fontSize='small' />
             </Box>
-            <Typography
-                variant='caption'
-                sx={{
-                    opacity: listening ? 1 : 0.5,
-                    fontSize: "16px",
-                    color: "#555"
-                }}>
-                {listening ? "Listening..." : "Tap to listen"}
-            </Typography>
         </Box>
     );
 }
