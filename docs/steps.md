@@ -22,6 +22,7 @@
   - Handle different recipe formats
 - Add error handling
 - Create response format for frontend
+- Update the frontend to show the response for test purposes
 
 ## 4. Voice Interface Setup (2-3 hours)
 - Implement browser speech synthesis

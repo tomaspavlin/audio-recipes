@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, TextField, Button, Paper, Stack } from '@mui/material';
+import { Box, TextField, Button, Paper, Stack, Link } from '@mui/material';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 const sampleRecipe = `Classic Chocolate Chip Cookies
 
@@ -42,37 +41,70 @@ export default function RecipeInput() {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, my: 4 }}>
+    <Paper 
+      elevation={2} 
+      sx={{ 
+        p: 4, 
+        width: '100%',
+        maxWidth: 600,
+        borderRadius: 3,
+        bgcolor: 'white',
+      }}
+    >
       <form onSubmit={handleSubmit}>
         <TextField
           fullWidth
           multiline
           rows={6}
           variant="outlined"
-          label="Paste your recipe here"
+          label="Enter a recipe"
           value={recipe}
           onChange={(e) => setRecipe(e.target.value)}
-          placeholder="Enter your recipe steps..."
-          sx={{ mb: 2 }}
+          placeholder="Paste your recipe here..."
+          sx={{ 
+            mb: 3,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              fontSize: '1.1rem',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: '1.1rem',
+            },
+          }}
         />
-        <Stack direction="row" spacing={2} justifyContent="center">
+        <Stack spacing={2} alignItems="center">
           <Button
             type="submit"
             variant="contained"
             size="large"
             startIcon={<RestaurantIcon />}
+            sx={{
+              bgcolor: '#E87C4B',
+              borderRadius: 2,
+              px: 4,
+              py: 1.5,
+              fontSize: '1.1rem',
+              '&:hover': {
+                bgcolor: '#d86b3a',
+              },
+            }}
           >
             Start Cooking
           </Button>
-          <Button
-            type="button"
-            variant="outlined"
-            size="large"
-            startIcon={<ContentCopyIcon />}
+          <Link
+            component="button"
+            variant="body2"
             onClick={handleSampleRecipe}
+            sx={{
+              color: '#555555',
+              textDecoration: 'none',
+              '&:hover': {
+                textDecoration: 'underline',
+              },
+            }}
           >
-            Try Sample Recipe
-          </Button>
+            Try with sample recipe
+          </Link>
         </Stack>
       </form>
     </Paper>
