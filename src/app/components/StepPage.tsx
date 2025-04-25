@@ -77,7 +77,8 @@ export default function StepPage({
 
     const startListening = () => {
         SpeechRecognition.startListening({
-            continuous: true
+            continuous: true,
+            language: "en-US"
         });
     };
     
