@@ -1,11 +1,29 @@
 "use client";
 import { Box, Button, Typography } from "@mui/material";
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from 'next/navigation';
 
 export default function StepPage({ steps }: { steps: { id: number; text: string }[] }) {
   const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
   const router = useRouter();
+
+  const speakStep = () => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(steps[currentStepIndex].text);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  useEffect(() => {
+    speakStep();
+    
+    // Cleanup function to stop speech when component unmounts or step changes
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [currentStepIndex]);
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -44,6 +62,17 @@ export default function StepPage({ steps }: { steps: { id: number; text: string 
         <Typography variant="h5" sx={{ mb: 4 }}>
           {steps[currentStepIndex].text}
         </Typography>
+        <Button
+          variant="contained"
+          onClick={speakStep}
+          sx={{ 
+            mb: 4,
+            bgcolor: '#E87C4B',
+            '&:hover': { bgcolor: '#d86b3a' }
+          }}
+        >
+          🔊 Replay Step
+        </Button>
       </Box>
       <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
         <Button
