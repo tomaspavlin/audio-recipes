@@ -2,7 +2,6 @@
 
 import CloseIcon from "@mui/icons-material/Close";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
-import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 import {
     Box,
     Button,
@@ -12,13 +11,12 @@ import {
     IconButton,
     Link,
     Paper,
-    Stack,
     TextField,
     Typography
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { ParsedRecipe, Photo, RecipeParseError } from "../types/recipe";
+import { ParsedRecipe, Photo } from "../types/recipe";
 import CameraButton from "./CameraButton";
 
 const sampleRecipe = `Classic Chocolate Chip Cookies
@@ -45,318 +43,209 @@ Instructions:
 8. Cool on wire rack`;
 
 export default function RecipeInput() {
-    const [recipe, setRecipe] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [parsedRecipe, setParsedRecipe] = useState<ParsedRecipe | null>(null);
+    const [recipeText, setRecipeText] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [showSampleDialog, setShowSampleDialog] = useState(false);
     const [photos, setPhotos] = useState<Photo[]>([]);
-    const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
     const router = useRouter();
 
-    const handlePhotoAdd = async (imageData: string) => {
-        if (photos.length >= 6) {
-            setError("Maximum 6 photos allowed");
-            return;
-        }
-
+    const handlePhotoAdd = (imageData: string) => {
         const newPhoto: Photo = {
             id: Date.now().toString(),
             dataUrl: imageData
         };
-
         setPhotos([...photos, newPhoto]);
     };
 
-    const handlePhotoRemove = (id: string) => {
-        setPhotos(photos.filter((photo) => photo.id !== id));
-    };
-
-    const handlePhotoClick = (photo: Photo) => {
-        setSelectedPhoto(photo);
-    };
-
-    const handleClosePreview = () => {
-        setSelectedPhoto(null);
-    };
-
-    const handleReadText = async () => {
-        if (photos.length === 0) {
-            setError("No photos to read text from");
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            const allTexts: string[] = [];
-            let processedCount = 0;
-
-            for (const photo of photos) {
-                try {
-                    const response = await fetch("/api/ocr", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ image: photo.dataUrl })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(
-                            `Failed to process image ${processedCount + 1}`
-                        );
-                    }
-
-                    const { text } = await response.json();
-                    if (text && text.trim()) {
-                        allTexts.push(text);
-                    }
-                } catch (err) {
-                    console.error(
-                        `Error processing image ${processedCount + 1}:`,
-                        err
-                    );
-                }
-                processedCount++;
-            }
-
-            if (allTexts.length > 0) {
-                const combinedText = allTexts.join("\n\n");
-                setRecipe((prevRecipe) => {
-                    if (prevRecipe) {
-                        return `${prevRecipe}\n\n${combinedText}`;
-                    }
-                    return combinedText;
-                });
-            } else {
-                setError("No text could be extracted from the images");
-            }
-        } catch (err) {
-            setError("Failed to read text from images");
-            console.error("Error reading text:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-        setParsedRecipe(null);
-
+    const handleSubmit = async () => {
+        if (!recipeText.trim()) return;
+        
+        setIsLoading(true);
         try {
             const response = await fetch("/api/parse-recipe", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ recipe, photos })
+                body: JSON.stringify({ recipe: recipeText, photos })
             });
 
-            const data = await response.json();
-
             if (!response.ok) {
-                const error = data as RecipeParseError;
-                throw new Error(error.message);
+                throw new Error("Failed to parse recipe");
             }
 
-            setParsedRecipe(data as ParsedRecipe);
+            const data = await response.json();
             sessionStorage.setItem("currentRecipe", JSON.stringify(data));
             router.push("/step-page");
-        } catch (err) {
-            setError(
-                err instanceof Error ? err.message : "Failed to parse recipe"
-            );
+        } catch (error) {
+            console.error("Error parsing recipe:", error);
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
     return (
         <Paper
-            elevation={2}
+            elevation={0}
             sx={{
-                p: 4,
-                width: "100%",
-                maxWidth: 600,
-                borderRadius: 3,
-                bgcolor: "white"
-            }}>
-            <form onSubmit={handleSubmit}>
-                <TextField
-                    fullWidth
-                    multiline
-                    rows={6}
-                    variant='outlined'
-                    label='Enter a recipe'
-                    value={recipe}
-                    onChange={(e) => setRecipe(e.target.value)}
-                    placeholder='Paste your recipe here...'
-                    sx={{
-                        mb: 3,
-                        "& .MuiOutlinedInput-root": {
-                            borderRadius: 2,
-                            fontSize: "1.1rem"
+                width: '100%',
+                borderRadius: 4,
+                overflow: 'hidden',
+                position: 'relative',
+                bgcolor: 'white',
+                transition: 'all 0.2s ease-in-out',
+                border: '1px solid',
+                borderColor: 'rgba(232, 124, 75, 0.1)',
+                background: `
+                    linear-gradient(white, white) padding-box,
+                    linear-gradient(to bottom right, rgba(232, 124, 75, 0.2), rgba(232, 124, 75, 0.05)) border-box
+                `,
+                boxShadow: `
+                    0 1px 2px rgba(0,0,0,0.02),
+                    0 4px 16px rgba(0,0,0,0.02),
+                    0 4px 24px rgba(232,124,75,0.04)
+                `,
+                '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: `
+                        0 1px 2px rgba(0,0,0,0.02),
+                        0 4px 16px rgba(0,0,0,0.04),
+                        0 8px 32px rgba(232,124,75,0.08)
+                    `,
+                    borderColor: 'rgba(232, 124, 75, 0.2)',
+                },
+            }}
+        >
+            {/* Main Text Input */}
+            <TextField
+                multiline
+                rows={8}
+                value={recipeText}
+                onChange={(e) => setRecipeText(e.target.value)}
+                placeholder="Paste your recipe here..."
+                fullWidth
+                variant="filled"
+                sx={{
+                    '& .MuiFilledInput-root': {
+                        bgcolor: 'transparent',
+                        '&:hover, &.Mui-focused': {
+                            bgcolor: 'transparent',
                         },
-                        "& .MuiInputLabel-root": {
-                            fontSize: "1.1rem"
-                        }
-                    }}
-                />
+                        '&:before, &:after': {
+                            display: 'none',
+                        },
+                    },
+                    '& .MuiFilledInput-input': {
+                        px: 3,
+                        py: 3,
+                        fontSize: '1.1rem',
+                        lineHeight: 1.6,
+                    },
+                }}
+            />
 
-                {photos.length > 0 && (
-                    <Box sx={{ mb: 3 }}>
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                mb: 1
-                            }}>
-                            <Typography variant='subtitle1'>Photos:</Typography>
-                            <Button
-                                variant='outlined'
-                                startIcon={<TextSnippetIcon />}
-                                onClick={handleReadText}
-                                disabled={loading}
-                                sx={{
-                                    borderColor: "#E87C4B",
-                                    color: "#E87C4B",
-                                    "&:hover": {
-                                        borderColor: "#D76B3A",
-                                        color: "#D76B3A"
-                                    }
-                                }}>
-                                Read Text from Images
-                            </Button>
-                        </Box>
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                            {photos.map((photo) => (
-                                <Box
-                                    key={photo.id}
-                                    sx={{
-                                        position: "relative",
-                                        width: 100,
-                                        height: 100,
-                                        cursor: "pointer",
-                                        "&:hover": {
-                                            opacity: 0.9
-                                        }
-                                    }}
-                                    onClick={() => handlePhotoClick(photo)}>
-                                    <img
-                                        src={photo.dataUrl}
-                                        alt='Recipe photo'
-                                        style={{
-                                            width: "100%",
-                                            height: "100%",
-                                            objectFit: "cover",
-                                            borderRadius: 8
-                                        }}
-                                    />
-                                    <IconButton
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handlePhotoRemove(photo.id);
-                                        }}
-                                        sx={{
-                                            position: "absolute",
-                                            top: 4,
-                                            right: 4,
-                                            bgcolor: "rgba(0,0,0,0.5)",
-                                            color: "white",
-                                            "&:hover": {
-                                                bgcolor: "rgba(0,0,0,0.7)"
-                                            },
-                                            width: 24,
-                                            height: 24
-                                        }}>
-                                        <CloseIcon sx={{ fontSize: 16 }} />
-                                    </IconButton>
-                                </Box>
-                            ))}
-                        </Box>
-                    </Box>
-                )}
+            {/* Action Buttons Container */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    p: 2,
+                    borderTop: '1px solid',
+                    borderColor: 'grey.100',
+                }}
+            >
+                {/* Left Side - Camera Button */}
+                <CameraButton onPhotoAdd={handlePhotoAdd} />
 
-                <Stack spacing={2} alignItems='center'>
-                    <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                        <Button
-                            type='submit'
-                            variant='contained'
-                            size='large'
-                            startIcon={<RestaurantIcon />}
-                            disabled={loading || !recipe}
-                            sx={{
-                                bgcolor: "#E87C4B",
-                                borderRadius: 2,
-                                px: 4,
-                                py: 1.5,
-                                fontSize: "1.1rem",
-                                "&:hover": {
-                                    bgcolor: "#d86b3a"
-                                }
-                            }}>
-                            Start Cooking
-                        </Button>
-                        <CameraButton onPhotoAdd={handlePhotoAdd} />
-                    </Box>
+                {/* Right Side - Actions */}
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <Link
-                        component='button'
-                        type='button'
-                        variant='body2'
-                        onClick={(e) => {
-                            e.preventDefault();
-                            setRecipe(sampleRecipe);
-                        }}
+                        component="button"
+                        variant="body2"
+                        onClick={() => setShowSampleDialog(true)}
                         sx={{
-                            color: "#555555",
-                            textDecoration: "none",
-                            "&:hover": {
-                                textDecoration: "underline"
-                            }
-                        }}>
+                            color: '#666',
+                            textDecoration: 'none',
+                            '&:hover': {
+                                textDecoration: 'underline',
+                            },
+                        }}
+                    >
                         Try with sample recipe
                     </Link>
-                </Stack>
-            </form>
+                    <Button
+                        variant="contained"
+                        onClick={handleSubmit}
+                        disabled={!recipeText.trim() || isLoading}
+                        startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <RestaurantIcon />}
+                        sx={{
+                            bgcolor: '#E87C4B',
+                            borderRadius: 2,
+                            px: 3,
+                            py: 1,
+                            fontSize: '1rem',
+                            textTransform: 'none',
+                            minWidth: '140px',
+                            boxShadow: '0 2px 8px rgba(232,124,75,0.3)',
+                            transition: 'all 0.2s ease-in-out',
+                            '&:hover': {
+                                bgcolor: '#d86b3a',
+                                transform: 'translateY(-1px)',
+                                boxShadow: '0 4px 12px rgba(232,124,75,0.4)',
+                            },
+                        }}
+                    >
+                        {isLoading ? 'Processing...' : 'Start Cooking'}
+                    </Button>
+                </Box>
+            </Box>
 
+            {/* Sample Recipe Dialog */}
             <Dialog
-                open={!!selectedPhoto}
-                onClose={handleClosePreview}
-                maxWidth='md'
-                fullWidth>
-                <DialogContent sx={{ p: 0, position: "relative" }}>
-                    {selectedPhoto && (
-                        <>
-                            <img
-                                src={selectedPhoto.dataUrl}
-                                alt='Enlarged recipe photo'
-                                style={{
-                                    width: "100%",
-                                    height: "auto",
-                                    maxHeight: "80vh",
-                                    objectFit: "contain"
-                                }}
-                            />
-                            <IconButton
-                                onClick={handleClosePreview}
-                                sx={{
-                                    position: "absolute",
-                                    top: 8,
-                                    right: 8,
-                                    bgcolor: "rgba(0,0,0,0.5)",
-                                    color: "white",
-                                    "&:hover": {
-                                        bgcolor: "rgba(0,0,0,0.7)"
-                                    }
-                                }}>
-                                <CloseIcon />
-                            </IconButton>
-                        </>
-                    )}
+                open={showSampleDialog}
+                onClose={() => setShowSampleDialog(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="h6">Sample Recipe</Typography>
+                        <IconButton
+                            onClick={() => setShowSampleDialog(false)}
+                            size="small"
+                            sx={{ color: 'grey.500' }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+                    <Typography
+                        variant="body1"
+                        component="pre"
+                        sx={{
+                            whiteSpace: 'pre-wrap',
+                            fontFamily: 'inherit',
+                            mb: 2,
+                        }}
+                    >
+                        {sampleRecipe}
+                    </Typography>
+                    <Button
+                        fullWidth
+                        variant="contained"
+                        onClick={() => {
+                            setRecipeText(sampleRecipe);
+                            setShowSampleDialog(false);
+                        }}
+                        sx={{
+                            bgcolor: '#E87C4B',
+                            '&:hover': {
+                                bgcolor: '#d86b3a',
+                            },
+                        }}
+                    >
+                        Use this recipe
+                    </Button>
                 </DialogContent>
             </Dialog>
         </Paper>
