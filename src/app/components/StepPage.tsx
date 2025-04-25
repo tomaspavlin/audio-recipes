@@ -17,6 +17,8 @@ export default function StepPage({
     const [isPlaying, setIsPlaying] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+=======
+>>>>>>> 513b6a8a8560970f6ea1f29d38eb05424386fabd
 
     const {
         transcript,
@@ -26,7 +28,6 @@ export default function StepPage({
     } = useSpeechRecognition({});
 
     const toggleListening = () => {
-        console.log("baf");
         if (listening) {
             SpeechRecognition.stopListening();
         } else {
@@ -116,7 +117,6 @@ export default function StepPage({
         router.push("/");
     };
 
-    // Add recognized text display in the UI
     return (
         <Box
             sx={{
@@ -200,6 +200,7 @@ export default function StepPage({
             <Button
                 variant='contained'
                 onClick={toggleListening}
+                disabled={!browserSupportsSpeechRecognition}
                 sx={{
                     mb: 4,
                     bgcolor: listening ? "#4CAF50" : "#E87C4B",
