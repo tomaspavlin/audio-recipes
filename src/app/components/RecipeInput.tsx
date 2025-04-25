@@ -2,6 +2,8 @@
 
 import CloseIcon from "@mui/icons-material/Close";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
+import CookieIcon from '@mui/icons-material/Cookie';
+import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 import {
     Box,
     Button,
@@ -12,7 +14,8 @@ import {
     Link,
     Paper,
     TextField,
-    Typography
+    Typography,
+    Collapse
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -57,6 +60,56 @@ export default function RecipeInput() {
         setPhotos([...photos, newPhoto]);
     };
 
+    const handlePhotoRemove = (id: string) => {
+        setPhotos(photos.filter(photo => photo.id !== id));
+    };
+
+    const handleReadText = async () => {
+        if (photos.length === 0) return;
+
+        setIsLoading(true);
+        try {
+            const allTexts: string[] = [];
+
+            for (const photo of photos) {
+                try {
+                    const response = await fetch("/api/ocr", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ image: photo.dataUrl })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to process image`);
+                    }
+
+                    const { text } = await response.json();
+                    if (text && text.trim()) {
+                        allTexts.push(text);
+                    }
+                } catch (err) {
+                    console.error('Error processing image:', err);
+                }
+            }
+
+            if (allTexts.length > 0) {
+                const combinedText = allTexts.join("\n\n");
+                setRecipeText((prevRecipe) => {
+                    if (prevRecipe) {
+                        return `${prevRecipe}\n\n${combinedText}`;
+                    }
+                    return combinedText;
+                });
+            }
+        } catch (err) {
+            console.error("Error reading text:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleSubmit = async () => {
         if (!recipeText.trim()) return;
         
@@ -76,7 +129,7 @@ export default function RecipeInput() {
 
             const data = await response.json();
             sessionStorage.setItem("currentRecipe", JSON.stringify(data));
-            router.push("/step-page");
+            router.push("/instruction-list");
         } catch (error) {
             console.error("Error parsing recipe:", error);
         } finally {
@@ -85,95 +138,172 @@ export default function RecipeInput() {
     };
 
     return (
-        <Paper
-            elevation={0}
-            sx={{
-                width: '100%',
-                borderRadius: 4,
-                overflow: 'hidden',
-                position: 'relative',
-                bgcolor: 'white',
-                transition: 'all 0.2s ease-in-out',
-                border: '1px solid',
-                borderColor: 'rgba(232, 124, 75, 0.1)',
-                background: `
-                    linear-gradient(white, white) padding-box,
-                    linear-gradient(to bottom right, rgba(232, 124, 75, 0.2), rgba(232, 124, 75, 0.05)) border-box
-                `,
-                boxShadow: `
-                    0 1px 2px rgba(0,0,0,0.02),
-                    0 4px 16px rgba(0,0,0,0.02),
-                    0 4px 24px rgba(232,124,75,0.04)
-                `,
-                '&:hover': {
-                    transform: 'translateY(-2px)',
+        <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Paper
+                elevation={0}
+                sx={{
+                    width: '100%',
+                    borderRadius: 4,
+                    overflow: 'hidden',
+                    position: 'relative',
+                    bgcolor: 'white',
+                    transition: 'all 0.2s ease-in-out',
+                    border: '1px solid',
+                    borderColor: 'rgba(232, 124, 75, 0.1)',
+                    background: `
+                        linear-gradient(white, white) padding-box,
+                        linear-gradient(to bottom right, rgba(232, 124, 75, 0.2), rgba(232, 124, 75, 0.05)) border-box
+                    `,
                     boxShadow: `
                         0 1px 2px rgba(0,0,0,0.02),
-                        0 4px 16px rgba(0,0,0,0.04),
-                        0 8px 32px rgba(232,124,75,0.08)
+                        0 4px 16px rgba(0,0,0,0.02),
+                        0 4px 24px rgba(232,124,75,0.04)
                     `,
-                    borderColor: 'rgba(232, 124, 75, 0.2)',
-                },
-            }}
-        >
-            {/* Main Text Input */}
-            <TextField
-                multiline
-                rows={8}
-                value={recipeText}
-                onChange={(e) => setRecipeText(e.target.value)}
-                placeholder="Paste your recipe here..."
-                fullWidth
-                variant="filled"
-                sx={{
-                    '& .MuiFilledInput-root': {
-                        bgcolor: 'transparent',
-                        '&:hover, &.Mui-focused': {
-                            bgcolor: 'transparent',
-                        },
-                        '&:before, &:after': {
-                            display: 'none',
-                        },
+                    '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: `
+                            0 1px 2px rgba(0,0,0,0.02),
+                            0 4px 16px rgba(0,0,0,0.04),
+                            0 8px 32px rgba(232,124,75,0.08)
+                        `,
+                        borderColor: 'rgba(232, 124, 75, 0.2)',
                     },
-                    '& .MuiFilledInput-input': {
-                        px: 3,
-                        py: 3,
-                        fontSize: '1.1rem',
-                        lineHeight: 1.6,
-                    },
-                }}
-            />
-
-            {/* Action Buttons Container */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    p: 2,
-                    borderTop: '1px solid',
-                    borderColor: 'grey.100',
                 }}
             >
-                {/* Left Side - Camera Button */}
-                <CameraButton onPhotoAdd={handlePhotoAdd} />
-
-                {/* Right Side - Actions */}
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <Link
-                        component="button"
-                        variant="body2"
-                        onClick={() => setShowSampleDialog(true)}
-                        sx={{
-                            color: '#666',
-                            textDecoration: 'none',
-                            '&:hover': {
-                                textDecoration: 'underline',
+                {/* Main Text Input */}
+                <TextField
+                    multiline
+                    rows={8}
+                    value={recipeText}
+                    onChange={(e) => setRecipeText(e.target.value)}
+                    placeholder="Paste your recipe here..."
+                    fullWidth
+                    variant="filled"
+                    sx={{
+                        '& .MuiFilledInput-root': {
+                            bgcolor: 'transparent',
+                            '&:hover, &.Mui-focused': {
+                                bgcolor: 'transparent',
                             },
+                            '&:before, &:after': {
+                                display: 'none',
+                            },
+                        },
+                        '& .MuiFilledInput-input': {
+                            px: 3,
+                            py: 3,
+                            fontSize: '1.1rem',
+                            lineHeight: 1.6,
+                        },
+                    }}
+                />
+
+                {/* Photos Section */}
+                <Collapse in={photos.length > 0}>
+                    <Box
+                        sx={{
+                            px: 3,
+                            py: 2,
+                            borderTop: '1px solid',
+                            borderColor: 'grey.100',
                         }}
                     >
-                        Try with sample recipe
-                    </Link>
+                        <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mb: 2
+                        }}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                                {photos.length} {photos.length === 1 ? 'photo' : 'photos'} added
+                            </Typography>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<TextSnippetIcon />}
+                                onClick={handleReadText}
+                                disabled={isLoading}
+                                sx={{
+                                    borderColor: '#E87C4B',
+                                    color: '#E87C4B',
+                                    '&:hover': {
+                                        borderColor: '#d86b3a',
+                                        bgcolor: 'rgba(232,124,75,0.04)',
+                                    },
+                                }}
+                            >
+                                Read text from images
+                            </Button>
+                        </Box>
+                        <Box sx={{ 
+                            display: 'flex', 
+                            gap: 1.5,
+                            flexWrap: 'wrap'
+                        }}>
+                            {photos.map((photo) => (
+                                <Box
+                                    key={photo.id}
+                                    sx={{
+                                        position: 'relative',
+                                        width: 80,
+                                        height: 80,
+                                        borderRadius: 2,
+                                        overflow: 'hidden',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                        transition: 'all 0.2s ease-in-out',
+                                        '&:hover': {
+                                            transform: 'scale(1.05)',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                        },
+                                    }}
+                                >
+                                    <img
+                                        src={photo.dataUrl}
+                                        alt="Recipe"
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover',
+                                        }}
+                                    />
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => handlePhotoRemove(photo.id)}
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 4,
+                                            right: 4,
+                                            bgcolor: 'rgba(0,0,0,0.5)',
+                                            color: 'white',
+                                            padding: '4px',
+                                            '&:hover': {
+                                                bgcolor: 'rgba(0,0,0,0.7)',
+                                            },
+                                        }}
+                                    >
+                                        <CloseIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                </Box>
+                            ))}
+                        </Box>
+                    </Box>
+                </Collapse>
+
+                {/* Action Buttons Container */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        p: 2,
+                        borderTop: '1px solid',
+                        borderColor: 'grey.100',
+                    }}
+                >
+                    {/* Left Side - Camera Button */}
+                    <CameraButton onPhotoAdd={handlePhotoAdd} />
+
+                    {/* Right Side - Actions */}
                     <Button
                         variant="contained"
                         onClick={handleSubmit}
@@ -199,6 +329,37 @@ export default function RecipeInput() {
                         {isLoading ? 'Processing...' : 'Start Cooking'}
                     </Button>
                 </Box>
+            </Paper>
+
+            {/* Sample Recipe Link */}
+            <Box
+                onClick={() => setShowSampleDialog(true)}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    cursor: 'pointer',
+                    color: '#666',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                        color: '#E87C4B',
+                        transform: 'translateY(-1px)',
+                    },
+                }}
+            >
+                <CookieIcon sx={{ fontSize: 20 }} />
+                <Typography
+                    variant="body2"
+                    sx={{
+                        fontWeight: 500,
+                        textDecoration: 'none',
+                        '&:hover': {
+                            textDecoration: 'none',
+                        },
+                    }}
+                >
+                    Not sure what to cook? Try our chocolate chip cookies recipe!
+                </Typography>
             </Box>
 
             {/* Sample Recipe Dialog */}
@@ -248,6 +409,6 @@ export default function RecipeInput() {
                     </Button>
                 </DialogContent>
             </Dialog>
-        </Paper>
+        </Box>
     );
 }
