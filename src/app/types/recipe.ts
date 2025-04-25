@@ -14,4 +14,10 @@ export interface ParsedRecipe {
 export interface RecipeParseError {
   message: string;
   code: string;
+}
+
+export interface Photo {
+    id: string;
+    dataUrl: string;
+    text?: string;
 } 

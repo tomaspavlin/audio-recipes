@@ -1,11 +1,13 @@
 "use client";
 
 import RestaurantIcon from "@mui/icons-material/Restaurant";
-import { Box, Button, Link, Paper, Stack, TextField } from "@mui/material";
+import { Box, Button, Link, Paper, Stack, TextField, IconButton, Typography, Dialog, DialogContent } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { ParsedRecipe, RecipeParseError } from "../types/recipe";
+import { ParsedRecipe, RecipeParseError, Photo } from "../types/recipe";
 import CameraButton from "./CameraButton";
+import CloseIcon from "@mui/icons-material/Close";
+import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 
 const sampleRecipe = `Classic Chocolate Chip Cookies
 
@@ -35,7 +37,93 @@ export default function RecipeInput() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [parsedRecipe, setParsedRecipe] = useState<ParsedRecipe | null>(null);
+    const [photos, setPhotos] = useState<Photo[]>([]);
+    const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
     const router = useRouter();
+
+    const handlePhotoAdd = async (imageData: string) => {
+        if (photos.length >= 6) {
+            setError("Maximum 6 photos allowed");
+            return;
+        }
+
+        const newPhoto: Photo = {
+            id: Date.now().toString(),
+            dataUrl: imageData,
+        };
+
+        setPhotos([...photos, newPhoto]);
+    };
+
+    const handlePhotoRemove = (id: string) => {
+        setPhotos(photos.filter(photo => photo.id !== id));
+    };
+
+    const handleReadText = async () => {
+        if (photos.length === 0) {
+            setError("No photos to read text from");
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const allTexts: string[] = [];
+            let processedCount = 0;
+            
+            for (const photo of photos) {
+                if (!photo.text) {
+                    try {
+                        const response = await fetch("/api/ocr", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({ image: photo.dataUrl }),
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Failed to process image ${processedCount + 1}`);
+                        }
+
+                        const { text } = await response.json();
+                        if (text && text.trim()) {
+                            photo.text = text;
+                            allTexts.push(text);
+                        }
+                    } catch (err) {
+                        console.error(`Error processing image ${processedCount + 1}:`, err);
+                        // Continue with next image even if one fails
+                    }
+                } else {
+                    allTexts.push(photo.text);
+                }
+                processedCount++;
+            }
+
+            // Update photos with new text
+            setPhotos([...photos]);
+
+            // Combine all texts and add to recipe field
+            if (allTexts.length > 0) {
+                const combinedText = allTexts.join("\n\n");
+                setRecipe(prevRecipe => {
+                    if (prevRecipe) {
+                        return `${prevRecipe}\n\n${combinedText}`;
+                    }
+                    return combinedText;
+                });
+            } else {
+                setError("No text could be extracted from the images");
+            }
+        } catch (err) {
+            setError("Failed to read text from images");
+            console.error("Error reading text:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -49,7 +137,7 @@ export default function RecipeInput() {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ recipe })
+                body: JSON.stringify({ recipe, photos })
             });
 
             const data = await response.json();
@@ -60,9 +148,8 @@ export default function RecipeInput() {
             }
 
             setParsedRecipe(data as ParsedRecipe);
-            // Store the parsed recipe in sessionStorage
             sessionStorage.setItem('currentRecipe', JSON.stringify(data));
-            router.push("/step-page"); // Navigate to the StepPage
+            router.push("/step-page");
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Failed to parse recipe"
@@ -70,6 +157,14 @@ export default function RecipeInput() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePhotoClick = (photo: Photo) => {
+        setSelectedPhoto(photo);
+    };
+
+    const handleClosePreview = () => {
+        setSelectedPhoto(null);
     };
 
     return (
@@ -103,6 +198,98 @@ export default function RecipeInput() {
                         }
                     }}
                 />
+                
+                {photos.length > 0 && (
+                    <Box sx={{ mb: 3 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="subtitle1">Photos:</Typography>
+                            <Button
+                                variant="outlined"
+                                startIcon={<TextSnippetIcon />}
+                                onClick={handleReadText}
+                                disabled={loading}
+                                sx={{
+                                    borderColor: '#E87C4B',
+                                    color: '#E87C4B',
+                                    '&:hover': {
+                                        borderColor: '#D76B3A',
+                                        color: '#D76B3A',
+                                    },
+                                }}
+                            >
+                                Read Text from Images
+                            </Button>
+                        </Box>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                            {photos.map((photo) => (
+                                <Box
+                                    key={photo.id}
+                                    sx={{
+                                        position: 'relative',
+                                        width: 100,
+                                        height: 100,
+                                        cursor: 'pointer',
+                                        '&:hover': {
+                                            opacity: 0.9,
+                                        },
+                                    }}
+                                    onClick={() => handlePhotoClick(photo)}
+                                >
+                                    <img
+                                        src={photo.dataUrl}
+                                        alt="Recipe photo"
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover',
+                                            borderRadius: 8,
+                                        }}
+                                    />
+                                    <IconButton
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePhotoRemove(photo.id);
+                                        }}
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 4,
+                                            right: 4,
+                                            bgcolor: 'rgba(0,0,0,0.5)',
+                                            color: 'white',
+                                            '&:hover': {
+                                                bgcolor: 'rgba(0,0,0,0.7)',
+                                            },
+                                            width: 24,
+                                            height: 24,
+                                        }}
+                                    >
+                                        <CloseIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                    {photo.text && (
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bgcolor: 'rgba(0,0,0,0.7)',
+                                                color: 'white',
+                                                p: 0.5,
+                                                fontSize: '0.7rem',
+                                                borderBottomLeftRadius: 8,
+                                                borderBottomRightRadius: 8,
+                                            }}
+                                        >
+                                            {photo.text}
+                                        </Typography>
+                                    )}
+                                </Box>
+                            ))}
+                        </Box>
+                    </Box>
+                )}
+
                 <Stack spacing={2} alignItems='center'>
                     <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                         <Button
@@ -123,7 +310,7 @@ export default function RecipeInput() {
                             }}>
                             Start Cooking
                         </Button>
-                        <CameraButton />
+                        <CameraButton onPhotoAdd={handlePhotoAdd} />
                     </Box>
                     <Link
                         component='button'
@@ -144,6 +331,62 @@ export default function RecipeInput() {
                     </Link>
                 </Stack>
             </form>
+
+            <Dialog
+                open={!!selectedPhoto}
+                onClose={handleClosePreview}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogContent sx={{ p: 0, position: 'relative' }}>
+                    {selectedPhoto && (
+                        <>
+                            <img
+                                src={selectedPhoto.dataUrl}
+                                alt="Enlarged recipe photo"
+                                style={{
+                                    width: '100%',
+                                    height: 'auto',
+                                    maxHeight: '80vh',
+                                    objectFit: 'contain',
+                                }}
+                            />
+                            <IconButton
+                                onClick={handleClosePreview}
+                                sx={{
+                                    position: 'absolute',
+                                    top: 8,
+                                    right: 8,
+                                    bgcolor: 'rgba(0,0,0,0.5)',
+                                    color: 'white',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(0,0,0,0.7)',
+                                    },
+                                }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                            {selectedPhoto.text && (
+                                <Box
+                                    sx={{
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bgcolor: 'rgba(0,0,0,0.7)',
+                                        color: 'white',
+                                        p: 2,
+                                    }}
+                                >
+                                    <Typography variant="body2">
+                                        {selectedPhoto.text}
+                                    </Typography>
+                                </Box>
+                            )}
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </Paper>
     );
 }
