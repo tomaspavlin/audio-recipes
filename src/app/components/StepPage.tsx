@@ -229,7 +229,10 @@ export default function StepPage({
             <Box
                 sx={{
                     display: "flex",
-                    flexDirection: "column",
+                    flexDirection: {
+                        xs: "row",
+                        sm: "column"
+                    },
                     alignItems: "center",
                     position: "absolute",
                     top: 0,
@@ -257,7 +260,7 @@ export default function StepPage({
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: 8
+                    gap: { xs: 2, sm: 4, md: 6 }
                 }}>
                 <Typography
                     variant='h3'
@@ -266,7 +269,8 @@ export default function StepPage({
                         fontWeight: "bold",
                         color: "#E87C4B",
                         maxWidth: "600px",
-                        textAlign: "center"
+                        textAlign: "center",
+                        fontSize: { xs: "1.5rem", sm: "2rem", md: "2.5rem" }
                     }}>
                     {recipeName}
                 </Typography>
