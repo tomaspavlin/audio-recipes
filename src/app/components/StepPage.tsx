@@ -106,7 +106,7 @@ export default function StepPage({
     };
 
     const handleNewResult = (result: string) => {
-        const nextKeywords = ["next", "continue", "další", "pokrač"];
+        const nextKeywords = ["next", "continue", "další", "pokrač", "pak"];
         const previousKeywords = [
             "previous",
             "back",
