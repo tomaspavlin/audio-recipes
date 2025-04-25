@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, TextField, Button, Paper, Stack, Link } from '@mui/material';
+import { Box, TextField, Button, Paper, Stack, Link, CircularProgress, Alert } from '@mui/material';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
+import { ParsedRecipe, RecipeParseError } from '../types/recipe';
 
 const sampleRecipe = `Classic Chocolate Chip Cookies
 
@@ -29,11 +30,40 @@ Instructions:
 
 export default function RecipeInput() {
   const [recipe, setRecipe] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [parsedRecipe, setParsedRecipe] = useState<ParsedRecipe | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Handle recipe submission
-    console.log('Recipe submitted:', recipe);
+    setLoading(true);
+    setError(null);
+    setParsedRecipe(null);
+
+    try {
+      const response = await fetch('/api/parse-recipe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ recipe }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const error = data as RecipeParseError;
+        throw new Error(error.message);
+      }
+
+      setParsedRecipe(data as ParsedRecipe);
+      // TODO: Navigate to recipe player or show recipe preview
+      console.log('Parsed recipe:', data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to parse recipe');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSampleRecipe = () => {
@@ -77,7 +107,8 @@ export default function RecipeInput() {
             type="submit"
             variant="contained"
             size="large"
-            startIcon={<RestaurantIcon />}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <RestaurantIcon />}
+            disabled={loading || !recipe.trim()}
             sx={{
               bgcolor: '#E87C4B',
               borderRadius: 2,
@@ -89,7 +120,7 @@ export default function RecipeInput() {
               },
             }}
           >
-            Start Cooking
+            {loading ? 'Processing...' : 'Start Cooking'}
           </Button>
           <Link
             component="button"
@@ -105,6 +136,11 @@ export default function RecipeInput() {
           >
             Try with sample recipe
           </Link>
+          {error && (
+            <Alert severity="error" sx={{ width: '100%' }}>
+              {error}
+            </Alert>
+          )}
         </Stack>
       </form>
     </Paper>

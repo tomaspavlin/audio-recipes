@@ -1,23 +1,37 @@
 import { NextResponse } from 'next/server';
-import { parseRecipe, validateRecipe } from '@/app/utils/recipeParser';
+import { parseRecipe } from '@/app/utils/recipeParser';
+import { RecipeParseError } from '@/app/types/recipe';
 
 export async function POST(request: Request) {
   try {
-    const { text } = await request.json();
+    const body = await request.json();
+    const { recipe } = body;
 
-    if (!validateRecipe(text)) {
-      return NextResponse.json(
-        { error: 'Invalid recipe text' },
-        { status: 400 }
-      );
+    if (!recipe || typeof recipe !== 'string') {
+      const error: RecipeParseError = {
+        message: 'Recipe text is required',
+        code: 'INVALID_INPUT'
+      };
+      return NextResponse.json(error, { status: 400 });
     }
 
-    const steps = parseRecipe(text);
-    return NextResponse.json({ steps });
+    const parsedRecipe = parseRecipe(recipe);
+    
+    // Validate that we have steps
+    if (!parsedRecipe.steps || parsedRecipe.steps.length === 0) {
+      const error: RecipeParseError = {
+        message: 'Could not parse any steps from the recipe',
+        code: 'PARSE_ERROR'
+      };
+      return NextResponse.json(error, { status: 400 });
+    }
+
+    return NextResponse.json(parsedRecipe);
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to parse recipe' },
-      { status: 500 }
-    );
+    const errorResponse: RecipeParseError = {
+      message: 'Failed to parse recipe',
+      code: 'PARSE_ERROR'
+    };
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 } 
