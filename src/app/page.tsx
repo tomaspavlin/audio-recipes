@@ -1,5 +1,4 @@
 import { Container, Box, Typography, Paper } from "@mui/material";
-import Header from "./components/Header";
 import Footer from "./components/Footer";
 import RecipeInput from "./components/RecipeInput";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
@@ -13,7 +12,6 @@ export default function Home() {
                 minHeight: "100vh",
                 bgcolor: "#FDF4ED"
             }}>
-            <Header />
             <Container
                 component='main'
                 maxWidth='md'
