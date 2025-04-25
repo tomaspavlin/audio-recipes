@@ -70,7 +70,8 @@ export default function StepPage({
         transcript,
         listening,
         resetTranscript,
-        browserSupportsSpeechRecognition
+        browserSupportsSpeechRecognition,
+        browserSupportsContinuousListening
     } = useSpeechRecognition({});
 
     const startListening = () => {
@@ -251,7 +252,10 @@ export default function StepPage({
                 <MicListeningButton
                     listening={listening}
                     onClick={toggleListening}
-                    disabled={!browserSupportsSpeechRecognition}
+                    disabled={
+                        !browserSupportsSpeechRecognition ||
+                        !browserSupportsContinuousListening
+                    }
                 />
             </Box>
             <Box />
