@@ -1,5 +1,5 @@
 "use client";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Typography, CircularProgress } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef } from "react";
 import SpeechRecognition, {
@@ -14,6 +14,9 @@ export default function StepPage({
     const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
     const router = useRouter();
     const recognitionRef = useRef<any>(null);
+    const [isPlaying, setIsPlaying] = React.useState(false);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const {
         transcript,
@@ -60,20 +63,51 @@ export default function StepPage({
         if (transcript) handleNewResult(transcript.toLowerCase().trim());
     }, [transcript, handleNewResult]);
 
-    const speakStep = () => {
-        if ("speechSynthesis" in window) {
-            const utterance = new SpeechSynthesisUtterance(
-                steps[currentStepIndex].text
-            );
-            window.speechSynthesis.speak(utterance);
+    const speakStep = async () => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('/api/text-to-speech', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: steps[currentStepIndex].text }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate speech');
+            }
+
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+
+            if (audioRef.current) {
+                audioRef.current.src = audioUrl;
+                audioRef.current.play();
+            } else {
+                const audio = new Audio(audioUrl);
+                audio.onended = () => {
+                    setIsPlaying(false);
+                    URL.revokeObjectURL(audioUrl);
+                };
+                audio.play();
+                audioRef.current = audio;
+            }
+            setIsPlaying(true);
+        } catch (error) {
+            console.error('Error playing audio:', error);
+            setIsPlaying(false);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     useEffect(() => {
         speakStep();
         return () => {
-            if ("speechSynthesis" in window) {
-                window.speechSynthesis.cancel();
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.src = '';
             }
         };
     }, [currentStepIndex]);
@@ -112,12 +146,20 @@ export default function StepPage({
                 <Button
                     variant='contained'
                     onClick={speakStep}
+                    disabled={isLoading}
                     sx={{
                         mb: 4,
                         bgcolor: "#E87C4B",
                         "&:hover": { bgcolor: "#d86b3a" }
                     }}>
-                    🔊 Replay Step
+                    {isLoading ? (
+                        <>
+                            <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                            Loading...
+                        </>
+                    ) : (
+                        "🔊 Replay Step"
+                    )}
                 </Button>
             </Box>
             <Box sx={{ display: "flex", gap: 2, mb: 4 }}>
