@@ -85,7 +85,7 @@ export default function StepPage({
         SpeechRecognition.stopListening();
     };
     useEffect(() => {
-        // startListening();
+        startListening();
         return () => {
             stopListening();
         };
