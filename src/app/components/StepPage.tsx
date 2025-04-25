@@ -121,7 +121,14 @@ export default function StepPage({
             "předchozí",
             "předtím"
         ];
-        const repeatKeywords = ["repeat", "again", "opak", "znov"];
+        const repeatKeywords = [
+            "repeat",
+            "again",
+            "opak",
+            "znov",
+            "what",
+            "cože"
+        ];
 
         if (nextKeywords.some((keyword) => result.includes(keyword))) {
             resetTranscript(); // Clear text
