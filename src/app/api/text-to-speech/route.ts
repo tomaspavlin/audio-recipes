@@ -5,9 +5,23 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// Available voices from OpenAI TTS
+const AVAILABLE_VOICES = [
+  { id: 'alloy', name: 'Alloy' },
+  { id: 'echo', name: 'Echo' },
+  { id: 'fable', name: 'Fable' },
+  { id: 'onyx', name: 'Onyx' },
+  { id: 'nova', name: 'Nova' },
+  { id: 'shimmer', name: 'Shimmer' }
+];
+
+export async function GET() {
+  return NextResponse.json({ voices: AVAILABLE_VOICES });
+}
+
 export async function POST(request: Request) {
   try {
-    const { text } = await request.json();
+    const { text, voice = 'alloy' } = await request.json();
 
     if (!text) {
       return NextResponse.json(
@@ -16,10 +30,18 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!AVAILABLE_VOICES.some(v => v.id === voice)) {
+      return NextResponse.json(
+        { error: 'Invalid voice selected' },
+        { status: 400 }
+      );
+    }
+
     const mp3 = await openai.audio.speech.create({
       model: "tts-1",
-      voice: "alloy",
+      voice: voice as any,
       input: text,
+      response_format: "mp3",
     });
 
     const buffer = Buffer.from(await mp3.arrayBuffer());
