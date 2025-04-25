@@ -69,7 +69,7 @@ export default function StepPage({ steps }: { steps: { id: number; text: string 
         sx={{
           position: 'absolute',
           top: 16,
-          right: 16,
+          left: 16,
           borderColor: '#E87C4B',
           color: '#E87C4B',
           '&:hover': { borderColor: '#d86b3a', color: '#d86b3a' },
