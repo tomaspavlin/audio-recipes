@@ -1,8 +1,7 @@
 import { Container, Box, Typography, Paper } from '@mui/material';
-import Header from './components/Header';
 import Footer from './components/Footer';
 import RecipeInput from './components/RecipeInput';
-import RestaurantIcon from '@mui/icons-material/Restaurant';
+import Image from 'next/image';
 
 export default function Home() {
   return (
@@ -14,7 +13,6 @@ export default function Home() {
         bgcolor: '#FDF4ED',
       }}
     >
-      <Header />
       <Container 
         component="main" 
         maxWidth="md" 
@@ -27,21 +25,26 @@ export default function Home() {
           gap: 4,
         }}
       >
-        {/* Icon */}
-        <Paper
-          elevation={2}
+        {/* Logo */}
+        <Box
           sx={{
-            width: 80,
-            height: 80,
+            position: 'relative',
+            width: 120,
+            height: 120,
             borderRadius: 3,
-            bgcolor: '#E87C4B',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            overflow: 'hidden',
           }}
         >
-          <RestaurantIcon sx={{ color: 'white', fontSize: 40 }} />
-        </Paper>
+          <Image
+            src="/flavicon-orange-bg.png"
+            alt="Audio Recipes Logo"
+            fill
+            style={{
+              objectFit: 'contain',
+            }}
+            priority
+          />
+        </Box>
 
         {/* Headline and Subheadline */}
         <Box sx={{ textAlign: 'center' }}>
@@ -68,19 +71,6 @@ export default function Home() {
 
         {/* Recipe Input */}
         <RecipeInput />
-
-        {/* Instructions */}
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Typography variant="body1" sx={{ color: '#555555', mb: 1 }}>
-            1. Paste a recipe
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#555555', mb: 1 }}>
-            2. Hit start
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#555555' }}>
-            3. Listen and cook!
-          </Typography>
-        </Box>
       </Container>
       <Footer />
     </Box>
