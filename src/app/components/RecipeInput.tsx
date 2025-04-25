@@ -1,7 +1,7 @@
 "use client";
 
 import RestaurantIcon from "@mui/icons-material/Restaurant";
-import { Box, Button, Link, Paper, Stack, TextField, IconButton, Typography, Dialog, DialogContent } from "@mui/material";
+import { Box, Button, Link, Paper, Stack, TextField, IconButton, Typography, Dialog, DialogContent, CircularProgress } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { ParsedRecipe, RecipeParseError, Photo } from "../types/recipe";
@@ -149,7 +149,7 @@ export default function RecipeInput() {
 
             setParsedRecipe(data as ParsedRecipe);
             sessionStorage.setItem('currentRecipe', JSON.stringify(data));
-            router.push("/step-page");
+            router.push("/instruction-list");
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Failed to parse recipe"
@@ -296,7 +296,7 @@ export default function RecipeInput() {
                             type='submit'
                             variant='contained'
                             size='large'
-                            startIcon={<RestaurantIcon />}
+                            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <RestaurantIcon />}
                             disabled={loading || !recipe}
                             sx={{
                                 bgcolor: "#E87C4B",
@@ -308,7 +308,7 @@ export default function RecipeInput() {
                                     bgcolor: "#d86b3a"
                                 }
                             }}>
-                            Start Cooking
+                            {loading ? "Processing..." : "Start Cooking"}
                         </Button>
                         <CameraButton onPhotoAdd={handlePhotoAdd} />
                     </Box>

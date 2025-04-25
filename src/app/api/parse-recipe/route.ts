@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+import { parseRecipeWithLLM } from '@/app/utils/llmRecipeParser';
+import { RecipeParseError } from '@/app/types/recipe';
 
 interface ParseRecipeRequest {
     recipe: string;
@@ -37,28 +34,24 @@ export async function POST(request: Request) {
             }
         }
 
-        const completion = await openai.chat.completions.create({
-            messages: [
-                {
-                    role: "system",
-                    content: "You are a helpful assistant that parses recipes into structured format. Extract ingredients and steps from the recipe text. For ingredients, include quantity, unit, and name. For steps, include the step number and description."
-                },
-                {
-                    role: "user",
-                    content: fullRecipe
-                }
-            ],
-            model: "gpt-4-turbo-preview",
-        });
-
-        const parsedRecipe = JSON.parse(completion.choices[0].message.content || '{}');
+        const parsedRecipe = await parseRecipeWithLLM(fullRecipe);
+        
+        // Validate that we have steps
+        if (!parsedRecipe.steps || parsedRecipe.steps.length === 0) {
+            const error: RecipeParseError = {
+                message: 'Could not parse any steps from the recipe',
+                code: 'PARSE_ERROR'
+            };
+            return NextResponse.json(error, { status: 400 });
+        }
 
         return NextResponse.json(parsedRecipe);
     } catch (error) {
         console.error('Error parsing recipe:', error);
-        return NextResponse.json(
-            { error: 'Failed to parse recipe' },
-            { status: 500 }
-        );
+        const errorResponse: RecipeParseError = {
+            message: 'Failed to parse recipe',
+            code: 'PARSE_ERROR'
+        };
+        return NextResponse.json(errorResponse, { status: 500 });
     }
 } 
