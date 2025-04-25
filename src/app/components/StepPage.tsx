@@ -46,6 +46,7 @@ export default function StepPage({
     const [selectedVoice, setSelectedVoice] = React.useState("alloy");
     const [speechSpeed, setSpeechSpeed] = React.useState(1.0);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const currentAudioRef = useRef<HTMLAudioElement | null>(null);
     const [isVoiceSettingsOpen, setIsVoiceSettingsOpen] = useState(true);
     const [isSettingsPopupOpen, setIsSettingsPopupOpen] = useState(false);
     const [audioCache, setAudioCache] = useState<Record<number, string>>({});
@@ -157,6 +158,12 @@ export default function StepPage({
 
     const speakStep = React.useCallback(async () => {
         try {
+            // Stop any currently playing audio
+            if (currentAudioRef.current) {
+                currentAudioRef.current.pause();
+                currentAudioRef.current.currentTime = 0;
+            }
+            
             const currentStep = steps[currentStepIndex];
             let audioUrl = audioCache[currentStep.id];
 
@@ -185,39 +192,47 @@ export default function StepPage({
                 }));
             }
             
-            if (audioRef.current) {
-                audioRef.current.src = audioUrl;
-                audioRef.current.play();
-                setIsPlaying(true);
-                audioRef.current.onended = () => {
-                    setIsPlaying(false);
-                };
-            }
+            // Create a new audio instance
+            const audio = new Audio(audioUrl);
+            currentAudioRef.current = audio;
+            
+            audio.onended = () => {
+                setIsPlaying(false);
+                currentAudioRef.current = null;
+            };
+            
+            audio.onerror = (error) => {
+                console.error('Error playing audio:', error);
+                setIsPlaying(false);
+                currentAudioRef.current = null;
+            };
+            
+            await audio.play();
+            setIsPlaying(true);
         } catch (error: unknown) {
             console.error('Error playing audio:', error);
             setIsPlaying(false);
+            currentAudioRef.current = null;
         }
     }, [currentStepIndex, selectedVoice, speechSpeed, steps, audioCache]);
 
     // Handle audio playback when step changes
     useEffect(() => {
-        speakStep();
-        
-        const currentAudioRef = audioRef.current;
+        // Small delay to ensure UI updates before playing audio
+        const timer = setTimeout(() => {
+            speakStep();
+        }, 100);
         
         // Cleanup function
         return () => {
-            if (currentAudioRef) {
-                currentAudioRef.pause();
-                currentAudioRef.src = '';
-                setIsPlaying(false);
+            clearTimeout(timer);
+            if (currentAudioRef.current) {
+                currentAudioRef.current.pause();
+                currentAudioRef.current.currentTime = 0;
+                currentAudioRef.current = null;
             }
-            // Clean up old audio URLs when component unmounts
-            Object.values(audioCache).forEach(url => {
-                URL.revokeObjectURL(url);
-            });
         };
-    }, [currentStepIndex, selectedVoice, speechSpeed, speakStep, audioCache]);
+    }, [currentStepIndex, selectedVoice, speechSpeed, speakStep]);
 
     const handleNewRecipe = () => {
         router.push("/");
