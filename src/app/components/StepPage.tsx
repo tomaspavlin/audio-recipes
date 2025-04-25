@@ -42,14 +42,15 @@ export default function StepPage({
     const router = useRouter();
     const recognitionRef = useRef<any>(null);
     const [isPlaying, setIsPlaying] = React.useState(false);
-    const [isLoading, setIsLoading] = React.useState(false);
     const [voices, setVoices] = React.useState<Voice[]>([]);
     const [selectedVoice, setSelectedVoice] = React.useState("alloy");
     const [speechSpeed, setSpeechSpeed] = React.useState(1.0);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isVoiceSettingsOpen, setIsVoiceSettingsOpen] = useState(true);
     const [isSettingsPopupOpen, setIsSettingsPopupOpen] = useState(false);
+    const [audioCache, setAudioCache] = useState<Record<number, string>>({});
 
+    const isLoading = audioCache[steps[currentStepIndex].id] === undefined;
     // Fetch available voices
     useEffect(() => {
         const fetchVoices = async () => {
@@ -80,7 +81,7 @@ export default function StepPage({
         });
     };
     useEffect(() => {
-        startListening();
+        // startListening();
     }, []);
 
     const toggleListening = () => {
@@ -105,15 +106,16 @@ export default function StepPage({
     };
 
     const handleNewResult = (result: string) => {
-        const nextKeywords = ["next", "continue", "další"];
+        const nextKeywords = ["next", "continue", "další", "pokrač"];
         const previousKeywords = [
             "previous",
             "back",
             "zpátky",
             "zpět",
-            "předchozí"
+            "předchozí",
+            "předtím"
         ];
-        const repeatKeywords = ["repeat", "again", "opakovat", "znovu"];
+        const repeatKeywords = ["repeat", "again", "opak", "znov"];
 
         if (nextKeywords.some((keyword) => result.includes(keyword))) {
             resetTranscript(); // Clear text
@@ -134,27 +136,65 @@ export default function StepPage({
         if (transcript) handleNewResult(transcript.toLowerCase().trim());
     }, [transcript, handleNewResult]);
 
+    const getAudioUrl = async (text: string) => {
+        const response = await fetch("/api/text-to-speech", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                text: text,
+                voice: selectedVoice,
+                speed: speechSpeed
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to generate speech");
+        }
+
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        return audioUrl;
+    };
+
+    const getStepAudioUrl = async (stepIndex: number) => {
+        const step = steps[stepIndex];
+        if (audioCache[step.id]) {
+            return audioCache[step.id]; // Return cached URL if available
+        }
+
+        try {
+            const audioUrl = await getAudioUrl(step.text);
+            setAudioCache((prev) => ({
+                ...prev,
+                [step.id]: audioUrl
+            }));
+            return audioUrl;
+        } catch (error) {
+            console.error("Error fetching audio URL:", error);
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        setAudioCache({});
+    }, [selectedVoice, speechSpeed]);
+
+    const getCurrentAudioUrl = async () => {
+        //load next onex
+        getStepAudioUrl(currentStepIndex + 1);
+        return await getStepAudioUrl(currentStepIndex);
+    };
+
     const speakStep = async () => {
         try {
-            setIsLoading(true);
-            const response = await fetch("/api/text-to-speech", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    text: steps[currentStepIndex].text,
-                    voice: selectedVoice,
-                    speed: speechSpeed
-                })
-            });
+            const audioUrl = await getCurrentAudioUrl();
 
-            if (!response.ok) {
-                throw new Error("Failed to generate speech");
+            if (!audioUrl) {
+                console.log("Audio is loading for the current step...");
+                return; // Exit early if audio is not yet loaded
             }
-
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
 
             if (audioRef.current) {
                 audioRef.current.src = audioUrl;
@@ -173,7 +213,6 @@ export default function StepPage({
             console.error("Error playing audio:", error);
             setIsPlaying(false);
         } finally {
-            setIsLoading(false);
         }
     };
 
