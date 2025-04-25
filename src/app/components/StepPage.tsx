@@ -1,17 +1,18 @@
 "use client";
+import MicListeningButton from "@/app/components/MicListeningButton";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import HomeIcon from "@mui/icons-material/Home";
-import MicIcon from "@mui/icons-material/Mic";
-import MicOffIcon from "@mui/icons-material/MicOff";
-import SpeedIcon from "@mui/icons-material/Speed";
+import SettingsIcon from "@mui/icons-material/Settings";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import {
     Box,
     Button,
     CircularProgress,
-    Divider,
+    Dialog,
+    DialogContent,
     FormControl,
+    IconButton,
     InputLabel,
     MenuItem,
     Paper,
@@ -45,6 +46,7 @@ export default function StepPage({
     const [speechSpeed, setSpeechSpeed] = React.useState(1.0);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isVoiceSettingsOpen, setIsVoiceSettingsOpen] = useState(true);
+    const [isSettingsPopupOpen, setIsSettingsPopupOpen] = useState(false);
 
     // Fetch available voices
     useEffect(() => {
@@ -69,13 +71,21 @@ export default function StepPage({
         browserSupportsSpeechRecognition
     } = useSpeechRecognition({});
 
+    const startListening = () => {
+        SpeechRecognition.startListening({
+            continuous: true
+        });
+    };
+    useEffect(() => {
+        startListening();
+    }, []);
+
     const toggleListening = () => {
+        console.log("bafiki");
         if (listening) {
             SpeechRecognition.stopListening();
         } else {
-            SpeechRecognition.startListening({
-                continuous: true
-            });
+            startListening();
         }
     };
 
@@ -87,9 +97,20 @@ export default function StepPage({
         setCurrentStepIndex((prev) => Math.max(prev - 1, 0));
     };
 
+    const handleRepeat = () => {
+        speakStep();
+    };
+
     const handleNewResult = (result: string) => {
         const nextKeywords = ["next", "continue", "další"];
-        const previousKeywords = ["previous", "back", "zpátky"];
+        const previousKeywords = [
+            "previous",
+            "back",
+            "zpátky",
+            "zpět",
+            "předchozí"
+        ];
+        const repeatKeywords = ["repeat", "again", "opakovat", "znovu"];
 
         if (nextKeywords.some((keyword) => result.includes(keyword))) {
             resetTranscript(); // Clear text
@@ -99,10 +120,14 @@ export default function StepPage({
         ) {
             resetTranscript(); // Clear text
             handlePrevious();
+        } else if (repeatKeywords.some((keyword) => result.includes(keyword))) {
+            resetTranscript(); // Clear text
+            handleRepeat();
         }
     };
 
     useEffect(() => {
+        console.log("Transcript:", transcript);
         if (transcript) handleNewResult(transcript.toLowerCase().trim());
     }, [transcript, handleNewResult]);
 
@@ -167,8 +192,8 @@ export default function StepPage({
         setSpeechSpeed(newValue as number);
     };
 
-    const toggleVoiceSettings = () => {
-        setIsVoiceSettingsOpen((prev) => !prev);
+    const toggleSettingsPopup = () => {
+        setIsSettingsPopupOpen((prev) => !prev);
     };
 
     return (
@@ -198,6 +223,32 @@ export default function StepPage({
                 }}>
                 New Recipe
             </Button>
+
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    padding: 2,
+                    color: !listening ? "grey.700" : "#E87C4B",
+                    gap: 1
+                }}>
+                <IconButton
+                    onClick={toggleSettingsPopup}
+                    sx={{
+                        color: "grey.700"
+                    }}>
+                    <SettingsIcon />
+                </IconButton>
+                <MicListeningButton
+                    listening={listening}
+                    onClick={toggleListening}
+                    disabled={!browserSupportsSpeechRecognition}
+                />
+            </Box>
 
             <Box
                 sx={{
@@ -285,158 +336,49 @@ export default function StepPage({
                 </Button>
             </Box>
 
-            <Paper
-                elevation={2}
-                sx={{
-                    p: 3,
-                    mb: 4,
-                    borderRadius: 3,
-                    bgcolor: "white",
-                    width: "100%",
-                    maxWidth: "800px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 2
-                }}>
-                <Box
-                    sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        width: "100%"
-                    }}>
-                    <Typography
-                        variant='h6'
-                        sx={{ fontWeight: "bold", color: "#555" }}>
+            <Dialog
+                open={isSettingsPopupOpen}
+                onClose={toggleSettingsPopup}
+                maxWidth='sm'
+                fullWidth>
+                <DialogContent>
+                    <Typography variant='h6' sx={{ mb: 2, fontWeight: "bold" }}>
                         Voice Settings
                     </Typography>
-                    <Button
-                        onClick={toggleVoiceSettings}
-                        sx={{
-                            color: "#E87C4B",
-                            textTransform: "none",
-                            fontWeight: "bold"
-                        }}>
-                        {isVoiceSettingsOpen ? "Collapse" : "Expand"}
-                    </Button>
-                </Box>
-                {isVoiceSettingsOpen && (
-                    <>
-                        <Divider sx={{ width: "100%", mb: 1 }} />
-                        <Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: { xs: "column", sm: "row" },
-                                alignItems: "center",
-                                gap: 2,
-                                width: "100%",
-                                justifyContent: "center"
-                            }}>
-                            <FormControl sx={{ minWidth: 200, flexGrow: 1 }}>
-                                <InputLabel id='voice-select-label'>
-                                    Select Voice
-                                </InputLabel>
-                                <Select
-                                    labelId='voice-select-label'
-                                    value={selectedVoice}
-                                    label='Select Voice'
-                                    onChange={(e) =>
-                                        setSelectedVoice(e.target.value)
-                                    }
-                                    sx={{
-                                        bgcolor: "white",
-                                        textAlign: "left", // Align text to the left
-                                        "& .MuiOutlinedInput-notchedOutline": {
-                                            borderColor: "#E87C4B"
-                                        },
-                                        "&:hover .MuiOutlinedInput-notchedOutline":
-                                            {
-                                                borderColor: "#d86b3a"
-                                            },
-                                        borderRadius: 2
-                                    }}>
-                                    {voices.map((voice) => (
-                                        <MenuItem
-                                            key={voice.id}
-                                            value={voice.id}>
-                                            {voice.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                            <Button
-                                variant='contained'
-                                onClick={toggleListening}
-                                disabled={!browserSupportsSpeechRecognition}
-                                startIcon={
-                                    listening ? <MicOffIcon /> : <MicIcon />
-                                }
-                                sx={{
-                                    bgcolor: listening ? "#4CAF50" : "#E87C4B",
-                                    "&:hover": {
-                                        bgcolor: listening
-                                            ? "#45A049"
-                                            : "#d86b3a"
-                                    },
-                                    borderRadius: 2,
-                                    py: 1,
-                                    px: 3,
-                                    minWidth: "180px"
-                                }}>
-                                {listening
-                                    ? "Stop Listening"
-                                    : "Start Listening"}
-                            </Button>
-                        </Box>
-                        <Box
-                            sx={{
-                                width: "100%",
-                                mt: 2,
-                                px: 2
-                            }}>
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 1
-                                }}>
-                                <SpeedIcon sx={{ mr: 1, color: "#E87C4B" }} />
-                                <Typography
-                                    variant='body2'
-                                    sx={{ color: "#555" }}>
-                                    Speech Speed: {speechSpeed.toFixed(1)}x
-                                </Typography>
-                            </Box>
+                    <Box>
+                        <FormControl sx={{ minWidth: 200, flexGrow: 1 }}>
+                            <InputLabel id='voice-select-label'>
+                                Select Voice
+                            </InputLabel>
+                            <Select
+                                labelId='voice-select-label'
+                                value={selectedVoice}
+                                label='Select Voice'
+                                onChange={(e) =>
+                                    setSelectedVoice(e.target.value)
+                                }>
+                                {voices.map((voice) => (
+                                    <MenuItem key={voice.id} value={voice.id}>
+                                        {voice.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant='body2'>
+                                Speech Speed: {speechSpeed.toFixed(1)}x
+                            </Typography>
                             <Slider
                                 value={speechSpeed}
                                 onChange={handleSpeedChange}
                                 min={0.25}
                                 max={4.0}
                                 step={0.25}
-                                marks={[
-                                    { value: 0.25, label: "0.25x" },
-                                    { value: 1.0, label: "1.0x" },
-                                    { value: 2.0, label: "2.0x" },
-                                    { value: 4.0, label: "4.0x" }
-                                ]}
-                                sx={{
-                                    color: "#E87C4B",
-                                    "& .MuiSlider-thumb": {
-                                        "&:hover, &.Mui-focusVisible": {
-                                            boxShadow:
-                                                "0px 0px 0px 8px rgba(232, 124, 75, 0.16)"
-                                        }
-                                    },
-                                    "& .MuiSlider-rail": {
-                                        opacity: 0.5
-                                    }
-                                }}
                             />
                         </Box>
-                    </>
-                )}
-            </Paper>
+                    </Box>
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 }
