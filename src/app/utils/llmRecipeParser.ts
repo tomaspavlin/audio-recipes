@@ -23,11 +23,19 @@ Format the output as a JSON object with:
   - id: number (starting from 1)
   - text: string (clear instruction)
 
+Also make sure that:
+- All ingredient quantities and units (e.g. “1 kilogram of potatoes”, “3 tablespoons of oil”) are clearly mentioned in the relevant steps.
+- Do not drop or omit measurements that are needed for preparation.
+- When using ingredients in a step, include the exact amount from the original recipe (converted to natural speech, like “one kilogram” or “two cups”).
+- Keep instructions concise but complete.
+
 Make sure each step is:
 - Clear and actionable
 - Suitable for voice reading
 - Broken down into simple, single actions
-- Uses natural language that sounds good when read aloud`;
+- Uses natural language that sounds good when read aloud
+- Each step should contain only one main action.
+- Avoid combining preparation and processing in one step`;
 
 export async function parseRecipeWithLLM(
     rawText: string
