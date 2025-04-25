@@ -1,7 +1,7 @@
 "use client";
 import { Box, Button, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import SpeechRecognition, {
     useSpeechRecognition
 } from "react-speech-recognition";
@@ -13,7 +13,6 @@ export default function StepPage({
 }) {
     const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
     const router = useRouter();
-    const recognitionRef = useRef<any>(null);
 
     const {
         transcript,
