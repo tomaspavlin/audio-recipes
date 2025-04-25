@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, TextField, Button, Paper, Stack, Link, CircularProgress, Alert } from '@mui/material';
+import { Box, TextField, Button, Paper, Stack, Link } from '@mui/material';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
-import { ParsedRecipe, RecipeParseError } from '../types/recipe';
+import CameraButton from './CameraButton';
 
 const sampleRecipe = `Classic Chocolate Chip Cookies
 
@@ -30,40 +30,11 @@ Instructions:
 
 export default function RecipeInput() {
   const [recipe, setRecipe] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [parsedRecipe, setParsedRecipe] = useState<ParsedRecipe | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setParsedRecipe(null);
-
-    try {
-      const response = await fetch('/api/parse-recipe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ recipe }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const error = data as RecipeParseError;
-        throw new Error(error.message);
-      }
-
-      setParsedRecipe(data as ParsedRecipe);
-      // TODO: Navigate to recipe player or show recipe preview
-      console.log('Parsed recipe:', data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to parse recipe');
-    } finally {
-      setLoading(false);
-    }
+    // TODO: Handle recipe submission
+    console.log('Recipe submitted:', recipe);
   };
 
   const handleSampleRecipe = () => {
@@ -103,25 +74,27 @@ export default function RecipeInput() {
           }}
         />
         <Stack spacing={2} alignItems="center">
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <RestaurantIcon />}
-            disabled={loading || !recipe.trim()}
-            sx={{
-              bgcolor: '#E87C4B',
-              borderRadius: 2,
-              px: 4,
-              py: 1.5,
-              fontSize: '1.1rem',
-              '&:hover': {
-                bgcolor: '#d86b3a',
-              },
-            }}
-          >
-            {loading ? 'Processing...' : 'Start Cooking'}
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              startIcon={<RestaurantIcon />}
+              sx={{
+                bgcolor: '#E87C4B',
+                borderRadius: 2,
+                px: 4,
+                py: 1.5,
+                fontSize: '1.1rem',
+                '&:hover': {
+                  bgcolor: '#d86b3a',
+                },
+              }}
+            >
+              Start Cooking
+            </Button>
+            <CameraButton />
+          </Box>
           <Link
             component="button"
             variant="body2"
@@ -136,11 +109,6 @@ export default function RecipeInput() {
           >
             Try with sample recipe
           </Link>
-          {error && (
-            <Alert severity="error" sx={{ width: '100%' }}>
-              {error}
-            </Alert>
-          )}
         </Stack>
       </form>
     </Paper>
