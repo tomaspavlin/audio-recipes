@@ -80,14 +80,20 @@ export default function StepPage({
             continuous: true
         });
     };
+    const stopListening = () => {
+        SpeechRecognition.stopListening();
+    };
     useEffect(() => {
-        // startListening();
+        startListening();
+        return () => {
+            stopListening();
+        };
     }, []);
 
     const toggleListening = () => {
         console.log("bafiki");
         if (listening) {
-            SpeechRecognition.stopListening();
+            stopListening();
         } else {
             startListening();
         }
