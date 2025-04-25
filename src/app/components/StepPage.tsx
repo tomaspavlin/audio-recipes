@@ -61,20 +61,18 @@ export default function StepPage({
     }, [transcript, handleNewResult]);
 
     const speakStep = () => {
-        if ("speechSynthesis" in window) {
-            const utterance = new SpeechSynthesisUtterance(
-                steps[currentStepIndex].text
-            );
-            window.speechSynthesis.speak(utterance);
-        }
+        speakText(steps[currentStepIndex].text);
+    };
+    const speakText = (text: string) => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "cs-CZ"; // nebo 'en-US', podle potřeby
+        speechSynthesis.speak(utterance);
     };
 
     useEffect(() => {
         speakStep();
         return () => {
-            if ("speechSynthesis" in window) {
-                window.speechSynthesis.cancel();
-            }
+            speechSynthesis.cancel(); // Stop any ongoing speech synthesis
         };
     }, [currentStepIndex]);
 
