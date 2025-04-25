@@ -1,11 +1,24 @@
+"use client";
 import StepPage from "../components/StepPage";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { ParsedRecipe } from "../types/recipe";
 
 export default function StepPageRoute() {
-    const steps = [
-        { id: 1, text: "Preheat the oven to 375°F (190°C)." },
-        { id: 2, text: "Mix the dry ingredients together." },
-        { id: 3, text: "Add the wet ingredients and stir." }
-    ];
+    const [recipe, setRecipe] = useState<ParsedRecipe | null>(null);
+    const searchParams = useSearchParams();
 
-    return <StepPage steps={steps} />;
+    useEffect(() => {
+        // Get the recipe from sessionStorage
+        const storedRecipe = sessionStorage.getItem('currentRecipe');
+        if (storedRecipe) {
+            setRecipe(JSON.parse(storedRecipe));
+        }
+    }, []);
+
+    if (!recipe) {
+        return null; // Or a loading state
+    }
+
+    return <StepPage steps={recipe.steps} />;
 }

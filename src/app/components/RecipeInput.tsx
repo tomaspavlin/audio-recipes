@@ -60,6 +60,8 @@ export default function RecipeInput() {
             }
 
             setParsedRecipe(data as ParsedRecipe);
+            // Store the parsed recipe in sessionStorage
+            sessionStorage.setItem('currentRecipe', JSON.stringify(data));
             router.push("/step-page"); // Navigate to the StepPage
         } catch (err) {
             setError(
@@ -125,8 +127,12 @@ export default function RecipeInput() {
                     </Box>
                     <Link
                         component='button'
+                        type="button"
                         variant='body2'
-                        onClick={() => setRecipe(sampleRecipe)}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setRecipe(sampleRecipe);
+                        }}
                         sx={{
                             color: "#555555",
                             textDecoration: "none",
