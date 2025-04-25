@@ -71,6 +71,14 @@ export default function RecipeInput() {
         setPhotos(photos.filter((photo) => photo.id !== id));
     };
 
+    const handlePhotoClick = (photo: Photo) => {
+        setSelectedPhoto(photo);
+    };
+
+    const handleClosePreview = () => {
+        setSelectedPhoto(null);
+    };
+
     const handleReadText = async () => {
         if (photos.length === 0) {
             setError("No photos to read text from");
@@ -85,44 +93,34 @@ export default function RecipeInput() {
             let processedCount = 0;
 
             for (const photo of photos) {
-                if (!photo.text) {
-                    try {
-                        const response = await fetch("/api/ocr", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({ image: photo.dataUrl })
-                        });
+                try {
+                    const response = await fetch("/api/ocr", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ image: photo.dataUrl })
+                    });
 
-                        if (!response.ok) {
-                            throw new Error(
-                                `Failed to process image ${processedCount + 1}`
-                            );
-                        }
-
-                        const { text } = await response.json();
-                        if (text && text.trim()) {
-                            photo.text = text;
-                            allTexts.push(text);
-                        }
-                    } catch (err) {
-                        console.error(
-                            `Error processing image ${processedCount + 1}:`,
-                            err
+                    if (!response.ok) {
+                        throw new Error(
+                            `Failed to process image ${processedCount + 1}`
                         );
-                        // Continue with next image even if one fails
                     }
-                } else {
-                    allTexts.push(photo.text);
+
+                    const { text } = await response.json();
+                    if (text && text.trim()) {
+                        allTexts.push(text);
+                    }
+                } catch (err) {
+                    console.error(
+                        `Error processing image ${processedCount + 1}:`,
+                        err
+                    );
                 }
                 processedCount++;
             }
 
-            // Update photos with new text
-            setPhotos([...photos]);
-
-            // Combine all texts and add to recipe field
             if (allTexts.length > 0) {
                 const combinedText = allTexts.join("\n\n");
                 setRecipe((prevRecipe) => {
@@ -166,7 +164,7 @@ export default function RecipeInput() {
 
             setParsedRecipe(data as ParsedRecipe);
             sessionStorage.setItem("currentRecipe", JSON.stringify(data));
-            router.push("/instruction-list");
+            router.push("/step-page");
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Failed to parse recipe"
@@ -174,14 +172,6 @@ export default function RecipeInput() {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handlePhotoClick = (photo: Photo) => {
-        setSelectedPhoto(photo);
-    };
-
-    const handleClosePreview = () => {
-        setSelectedPhoto(null);
     };
 
     return (
@@ -285,24 +275,6 @@ export default function RecipeInput() {
                                         }}>
                                         <CloseIcon sx={{ fontSize: 16 }} />
                                     </IconButton>
-                                    {photo.text && (
-                                        <Typography
-                                            variant='caption'
-                                            sx={{
-                                                position: "absolute",
-                                                bottom: 0,
-                                                left: 0,
-                                                right: 0,
-                                                bgcolor: "rgba(0,0,0,0.7)",
-                                                color: "white",
-                                                p: 0.5,
-                                                fontSize: "0.7rem",
-                                                borderBottomLeftRadius: 8,
-                                                borderBottomRightRadius: 8
-                                            }}>
-                                            {photo.text}
-                                        </Typography>
-                                    )}
                                 </Box>
                             ))}
                         </Box>
@@ -315,16 +287,7 @@ export default function RecipeInput() {
                             type='submit'
                             variant='contained'
                             size='large'
-                            startIcon={
-                                loading ? (
-                                    <CircularProgress
-                                        size={20}
-                                        color='inherit'
-                                    />
-                                ) : (
-                                    <RestaurantIcon />
-                                )
-                            }
+                            startIcon={<RestaurantIcon />}
                             disabled={loading || !recipe}
                             sx={{
                                 bgcolor: "#E87C4B",
@@ -336,7 +299,7 @@ export default function RecipeInput() {
                                     bgcolor: "#d86b3a"
                                 }
                             }}>
-                            {loading ? "Processing..." : "Start Cooking"}
+                            Start Cooking
                         </Button>
                         <CameraButton onPhotoAdd={handlePhotoAdd} />
                     </Box>
@@ -392,22 +355,6 @@ export default function RecipeInput() {
                                 }}>
                                 <CloseIcon />
                             </IconButton>
-                            {selectedPhoto.text && (
-                                <Box
-                                    sx={{
-                                        position: "absolute",
-                                        bottom: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bgcolor: "rgba(0,0,0,0.7)",
-                                        color: "white",
-                                        p: 2
-                                    }}>
-                                    <Typography variant='body2'>
-                                        {selectedPhoto.text}
-                                    </Typography>
-                                </Box>
-                            )}
                         </>
                     )}
                 </DialogContent>

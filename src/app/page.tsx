@@ -2,7 +2,6 @@ import { Container, Box, Typography, Paper } from '@mui/material';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import RecipeInput from './components/RecipeInput';
-import CameraButton from './components/CameraButton';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 
 export default function Home() {
@@ -69,9 +68,6 @@ export default function Home() {
 
         {/* Recipe Input */}
         <RecipeInput />
-
-        {/* Camera Button */}
-        <CameraButton />
 
         {/* Instructions */}
         <Box sx={{ textAlign: 'center', mt: 2 }}>
