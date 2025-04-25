@@ -2,16 +2,12 @@
 
 import CloseIcon from "@mui/icons-material/Close";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
-import CookieIcon from '@mui/icons-material/Cookie';
 import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 import {
     Box,
     Button,
     CircularProgress,
-    Dialog,
-    DialogContent,
     IconButton,
-    Link,
     Paper,
     TextField,
     Typography,
@@ -22,33 +18,9 @@ import React, { useState } from "react";
 import { ParsedRecipe, Photo } from "../types/recipe";
 import CameraButton from "./CameraButton";
 
-const sampleRecipe = `Classic Chocolate Chip Cookies
-
-Ingredients:
-- 2 1/4 cups all-purpose flour
-- 1 cup butter, softened
-- 3/4 cup sugar
-- 3/4 cup brown sugar
-- 2 eggs
-- 1 tsp vanilla extract
-- 1 tsp baking soda
-- 1/2 tsp salt
-- 2 cups chocolate chips
-
-Instructions:
-1. Preheat oven to 375°F (190°C)
-2. Cream together butter and sugars until fluffy
-3. Beat in eggs and vanilla
-4. Mix in dry ingredients
-5. Stir in chocolate chips
-6. Drop rounded tablespoons onto baking sheets
-7. Bake for 9 to 11 minutes
-8. Cool on wire rack`;
-
 export default function RecipeInput() {
     const [recipeText, setRecipeText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [showSampleDialog, setShowSampleDialog] = useState(false);
     const [photos, setPhotos] = useState<Photo[]>([]);
     const router = useRouter();
 
@@ -330,85 +302,6 @@ export default function RecipeInput() {
                     </Button>
                 </Box>
             </Paper>
-
-            {/* Sample Recipe Link */}
-            <Box
-                onClick={() => setShowSampleDialog(true)}
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    cursor: 'pointer',
-                    color: '#666',
-                    transition: 'all 0.2s ease-in-out',
-                    '&:hover': {
-                        color: '#E87C4B',
-                        transform: 'translateY(-1px)',
-                    },
-                }}
-            >
-                <CookieIcon sx={{ fontSize: 20 }} />
-                <Typography
-                    variant="body2"
-                    sx={{
-                        fontWeight: 500,
-                        textDecoration: 'none',
-                        '&:hover': {
-                            textDecoration: 'none',
-                        },
-                    }}
-                >
-                    Not sure what to cook? Try our chocolate chip cookies recipe!
-                </Typography>
-            </Box>
-
-            {/* Sample Recipe Dialog */}
-            <Dialog
-                open={showSampleDialog}
-                onClose={() => setShowSampleDialog(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                        <Typography variant="h6">Sample Recipe</Typography>
-                        <IconButton
-                            onClick={() => setShowSampleDialog(false)}
-                            size="small"
-                            sx={{ color: 'grey.500' }}
-                        >
-                            <CloseIcon />
-                        </IconButton>
-                    </Box>
-                    <Typography
-                        variant="body1"
-                        component="pre"
-                        sx={{
-                            whiteSpace: 'pre-wrap',
-                            fontFamily: 'inherit',
-                            mb: 2,
-                        }}
-                    >
-                        {sampleRecipe}
-                    </Typography>
-                    <Button
-                        fullWidth
-                        variant="contained"
-                        onClick={() => {
-                            setRecipeText(sampleRecipe);
-                            setShowSampleDialog(false);
-                        }}
-                        sx={{
-                            bgcolor: '#E87C4B',
-                            '&:hover': {
-                                bgcolor: '#d86b3a',
-                            },
-                        }}
-                    >
-                        Use this recipe
-                    </Button>
-                </DialogContent>
-            </Dialog>
         </Box>
     );
 }
