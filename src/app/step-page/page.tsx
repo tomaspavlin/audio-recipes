@@ -18,5 +18,5 @@ export default function StepPageRoute() {
         return null; // Or a loading state
     }
 
-    return <StepPage steps={recipe.steps} />;
+    return <StepPage steps={recipe.steps} recipeName={recipe.title} />;
 }

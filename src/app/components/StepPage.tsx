@@ -1,5 +1,4 @@
 "use client";
-import MicListeningButton from "@/app/components/MicListeningButton";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import HomeIcon from "@mui/icons-material/Home";
@@ -25,6 +24,7 @@ import React, { useEffect, useRef, useState } from "react";
 import SpeechRecognition, {
     useSpeechRecognition
 } from "react-speech-recognition";
+import MicListeningButton from "./MicListeningButton";
 
 interface Voice {
     id: string;
@@ -32,9 +32,11 @@ interface Voice {
 }
 
 export default function StepPage({
-    steps
+    steps,
+    recipeName
 }: {
     steps: { id: number; text: string }[];
+    recipeName: string;
 }) {
     const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
     const router = useRouter();
@@ -202,7 +204,7 @@ export default function StepPage({
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "center",
+                justifyContent: "space-between",
                 height: "100vh",
                 bgcolor: "#FDF4ED",
                 textAlign: "center",
@@ -249,53 +251,77 @@ export default function StepPage({
                     disabled={!browserSupportsSpeechRecognition}
                 />
             </Box>
-
+            <Box />
             <Box
                 sx={{
-                    flexGrow: 1,
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "center",
-                    maxWidth: "800px",
-                    width: "100%"
+                    alignItems: "center",
+                    gap: 8
                 }}>
-                <Typography variant='h4' sx={{ mb: 2, fontWeight: "bold" }}>
-                    Step {currentStepIndex + 1} of {steps.length}
-                </Typography>
-                <Paper
-                    elevation={3}
+                <Typography
+                    variant='h3'
                     sx={{
-                        p: 4,
                         mb: 4,
-                        borderRadius: 3,
-                        bgcolor: "white",
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.1)"
+                        fontWeight: "bold",
+                        color: "#E87C4B",
+                        maxWidth: "600px",
+                        textAlign: "center"
                     }}>
-                    <Typography variant='h5' sx={{ mb: 2, lineHeight: 1.5 }}>
-                        {steps[currentStepIndex].text}
+                    {recipeName}
+                </Typography>
+                <Box
+                    sx={{
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        maxWidth: "800px",
+                        width: "100%"
+                    }}>
+                    <Typography variant='h4' sx={{ mb: 2, fontWeight: "bold" }}>
+                        Step {currentStepIndex + 1} of {steps.length}
                     </Typography>
-                    <Button
-                        variant='contained'
-                        onClick={speakStep}
-                        disabled={isLoading}
-                        startIcon={
-                            isLoading ? (
-                                <CircularProgress size={20} color='inherit' />
-                            ) : (
-                                <VolumeUpIcon />
-                            )
-                        }
+                    <Paper
+                        elevation={3}
                         sx={{
-                            mt: 2,
-                            bgcolor: "#E87C4B",
-                            "&:hover": { bgcolor: "#d86b3a" },
-                            borderRadius: 2,
-                            py: 1,
-                            px: 3
+                            p: 4,
+                            mb: 4,
+                            borderRadius: 3,
+                            bgcolor: "white",
+                            boxShadow: "0 8px 24px rgba(0,0,0,0.1)"
                         }}>
-                        {isLoading ? "Loading..." : "Replay Step"}
-                    </Button>
-                </Paper>
+                        <Typography
+                            variant='h5'
+                            sx={{ mb: 2, lineHeight: 1.5 }}>
+                            {steps[currentStepIndex].text}
+                        </Typography>
+                        <Button
+                            variant='contained'
+                            onClick={speakStep}
+                            disabled={isLoading}
+                            startIcon={
+                                isLoading ? (
+                                    <CircularProgress
+                                        size={20}
+                                        color='inherit'
+                                    />
+                                ) : (
+                                    <VolumeUpIcon />
+                                )
+                            }
+                            sx={{
+                                mt: 2,
+                                bgcolor: "#E87C4B",
+                                "&:hover": { bgcolor: "#d86b3a" },
+                                borderRadius: 2,
+                                py: 1,
+                                px: 3
+                            }}>
+                            {isLoading ? "Loading..." : "Replay Step"}
+                        </Button>
+                    </Paper>
+                </Box>
             </Box>
 
             <Box
