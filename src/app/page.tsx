@@ -26,19 +26,15 @@ export default function Home() {
                     gap: 4
                 }}>
                 {/* Icon */}
-                <Paper
-                    elevation={2}
-                    sx={{
+                <img
+                    src='/flavicon-orange-bg.png'
+                    alt='App Icon'
+                    style={{
                         width: 80,
                         height: 80,
-                        borderRadius: 3,
-                        bgcolor: "#E87C4B",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                    <RestaurantIcon sx={{ color: "white", fontSize: 40 }} />
-                </Paper>
+                        borderRadius: 16
+                    }}
+                />
 
                 {/* Headline and Subheadline */}
                 <Box sx={{ textAlign: "center" }}>
