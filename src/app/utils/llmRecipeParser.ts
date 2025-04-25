@@ -5,11 +5,17 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-const SYSTEM_PROMPT = `You are a recipe parser that converts recipe text into clear, step-by-step instructions.
+const SYSTEM_PROMPT = `You are a recipe parser that converts recipe text into clear, step-by-step instructions optimized for text-to-speech.
 Your task is to:
 1. Extract the recipe title
 2. Break down the recipe into clear, actionable steps
 3. Make steps clear and concise for voice reading
+
+IMPORTANT: Format the text to be speech-friendly by:
+- Replace symbols with words (e.g., "350°F" becomes "350 degrees Fahrenheit")
+- Replace abbreviations with full words (e.g., "tbsp" becomes "tablespoon", "tsp" becomes "teaspoon")
+- Replace fractions with words (e.g., "1/2" becomes "one half", "1/4" becomes "one quarter")
+- etc.
 
 Format the output as a JSON object with:
 - title: string
@@ -20,7 +26,8 @@ Format the output as a JSON object with:
 Make sure each step is:
 - Clear and actionable
 - Suitable for voice reading
-- Broken down into simple, single actions`;
+- Broken down into simple, single actions
+- Uses natural language that sounds good when read aloud`;
 
 export async function parseRecipeWithLLM(
     rawText: string
