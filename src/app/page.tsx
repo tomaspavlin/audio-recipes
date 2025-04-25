@@ -1,6 +1,7 @@
 import { Container, Box, Typography, Paper } from '@mui/material';
 import Footer from './components/Footer';
 import RecipeInput from './components/RecipeInput';
+import CommunityRecipes from './components/CommunityRecipes';
 import Image from 'next/image';
 
 export default function Home() {
@@ -71,6 +72,9 @@ export default function Home() {
 
         {/* Recipe Input */}
         <RecipeInput />
+
+        {/* Community Recipes */}
+        <CommunityRecipes />
       </Container>
       <Footer />
     </Box>
