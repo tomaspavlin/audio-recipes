@@ -5,6 +5,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+type OpenAIVoice = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+
 // Available voices from OpenAI TTS
 const AVAILABLE_VOICES = [
   { id: 'alloy', name: 'Alloy' },
@@ -13,7 +15,7 @@ const AVAILABLE_VOICES = [
   { id: 'onyx', name: 'Onyx' },
   { id: 'nova', name: 'Nova' },
   { id: 'shimmer', name: 'Shimmer' }
-];
+] as const;
 
 export async function GET() {
   return NextResponse.json({ voices: AVAILABLE_VOICES });
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
 
     const mp3 = await openai.audio.speech.create({
       model: "tts-1",
-      voice: voice as any,
+      voice: voice as OpenAIVoice,
       input: text,
       response_format: "mp3",
       speed: validatedSpeed,
@@ -56,10 +58,10 @@ export async function POST(request: Request) {
         'Content-Length': buffer.length.toString(),
       },
     });
-  } catch (error) {
-    console.error('Error generating speech:', error);
+  } catch (error: unknown) {
+    console.error('Error in text-to-speech:', error);
     return NextResponse.json(
-      { error: 'Failed to generate speech' },
+      { error: error instanceof Error ? error.message : 'Failed to generate speech' },
       { status: 500 }
     );
   }

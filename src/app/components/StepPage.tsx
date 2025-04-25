@@ -40,7 +40,7 @@ export default function StepPage({
 }) {
     const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
     const router = useRouter();
-    const recognitionRef = useRef<any>(null);
+    const recognitionRef = useRef<SpeechRecognition | null>(null);
     const [isPlaying, setIsPlaying] = React.useState(false);
     const [voices, setVoices] = React.useState<Voice[]>([]);
     const [selectedVoice, setSelectedVoice] = React.useState("alloy");
@@ -49,8 +49,8 @@ export default function StepPage({
     const [isVoiceSettingsOpen, setIsVoiceSettingsOpen] = useState(true);
     const [isSettingsPopupOpen, setIsSettingsPopupOpen] = useState(false);
     const [audioCache, setAudioCache] = useState<Record<number, string>>({});
-
     const isLoading = audioCache[steps[currentStepIndex].id] === undefined;
+
     // Fetch available voices
     useEffect(() => {
         const fetchVoices = async () => {
@@ -80,12 +80,8 @@ export default function StepPage({
             continuous: true
         });
     };
-    useEffect(() => {
-        // startListening();
-    }, []);
 
     const toggleListening = () => {
-        console.log("bafiki");
         if (listening) {
             SpeechRecognition.stopListening();
         } else {
@@ -105,7 +101,7 @@ export default function StepPage({
         speakStep();
     };
 
-    const handleNewResult = (result: string) => {
+    const handleNewResult = React.useCallback((result: string) => {
         const nextKeywords = ["next", "continue", "další", "pokrač"];
         const previousKeywords = [
             "previous",
@@ -118,113 +114,91 @@ export default function StepPage({
         const repeatKeywords = ["repeat", "again", "opak", "znov"];
 
         if (nextKeywords.some((keyword) => result.includes(keyword))) {
-            resetTranscript(); // Clear text
+            resetTranscript();
             handleNext();
-        } else if (
-            previousKeywords.some((keyword) => result.includes(keyword))
-        ) {
-            resetTranscript(); // Clear text
+        } else if (previousKeywords.some((keyword) => result.includes(keyword))) {
+            resetTranscript();
             handlePrevious();
         } else if (repeatKeywords.some((keyword) => result.includes(keyword))) {
-            resetTranscript(); // Clear text
+            resetTranscript();
             handleRepeat();
         }
-    };
+    }, [resetTranscript, handleNext, handlePrevious, handleRepeat]);
 
     useEffect(() => {
-        console.log("Transcript:", transcript);
-        if (transcript) handleNewResult(transcript.toLowerCase().trim());
+        if (transcript) {
+            handleNewResult(transcript.toLowerCase().trim());
+        }
     }, [transcript, handleNewResult]);
 
-    const getAudioUrl = async (text: string) => {
-        const response = await fetch("/api/text-to-speech", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                text: text,
-                voice: selectedVoice,
-                speed: speechSpeed
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to generate speech");
-        }
-
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        return audioUrl;
-    };
-
-    const getStepAudioUrl = async (stepIndex: number) => {
-        const step = steps[stepIndex];
-        if (audioCache[step.id]) {
-            return audioCache[step.id]; // Return cached URL if available
-        }
-
-        try {
-            const audioUrl = await getAudioUrl(step.text);
-            setAudioCache((prev) => ({
-                ...prev,
-                [step.id]: audioUrl
-            }));
-            return audioUrl;
-        } catch (error) {
-            console.error("Error fetching audio URL:", error);
-            return null;
-        }
-    };
-
+    // Clear audio cache when voice or speed changes
     useEffect(() => {
         setAudioCache({});
     }, [selectedVoice, speechSpeed]);
 
-    const getCurrentAudioUrl = async () => {
-        //load next onex
-        getStepAudioUrl(currentStepIndex + 1);
-        return await getStepAudioUrl(currentStepIndex);
-    };
-
-    const speakStep = async () => {
+    const speakStep = React.useCallback(async () => {
         try {
-            const audioUrl = await getCurrentAudioUrl();
+            const currentStep = steps[currentStepIndex];
+            let audioUrl = audioCache[currentStep.id];
 
             if (!audioUrl) {
-                console.log("Audio is loading for the current step...");
-                return; // Exit early if audio is not yet loaded
-            }
+                const response = await fetch('/api/text-to-speech', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: currentStep.text,
+                        voice: selectedVoice,
+                        speed: speechSpeed,
+                    }),
+                });
 
+                if (!response.ok) {
+                    throw new Error('Failed to generate speech');
+                }
+
+                const audioBlob = await response.blob();
+                audioUrl = URL.createObjectURL(audioBlob);
+                setAudioCache(prev => ({
+                    ...prev,
+                    [currentStep.id]: audioUrl
+                }));
+            }
+            
             if (audioRef.current) {
                 audioRef.current.src = audioUrl;
                 audioRef.current.play();
-            } else {
-                const audio = new Audio(audioUrl);
-                audio.onended = () => {
+                setIsPlaying(true);
+                audioRef.current.onended = () => {
                     setIsPlaying(false);
-                    URL.revokeObjectURL(audioUrl);
                 };
-                audio.play();
-                audioRef.current = audio;
             }
-            setIsPlaying(true);
-        } catch (error) {
-            console.error("Error playing audio:", error);
+        } catch (error: unknown) {
+            console.error('Error playing audio:', error);
             setIsPlaying(false);
-        } finally {
         }
-    };
+    }, [currentStepIndex, selectedVoice, speechSpeed, steps, audioCache]);
 
+    // Handle audio playback when step changes
     useEffect(() => {
         speakStep();
+        
+        const currentAudioRef = audioRef.current;
+        
+        // Cleanup function
         return () => {
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.src = "";
+            if (currentAudioRef) {
+                currentAudioRef.pause();
+                currentAudioRef.src = '';
+                setIsPlaying(false);
             }
+            // Clean up old audio URLs when component unmounts
+            Object.values(audioCache).forEach(url => {
+                URL.revokeObjectURL(url);
+            });
         };
-    }, [currentStepIndex, selectedVoice, speechSpeed]);
+    }, [currentStepIndex, selectedVoice, speechSpeed, speakStep, audioCache]);
 
     const handleNewRecipe = () => {
         router.push("/");
