@@ -1,5 +1,5 @@
 "use client";
-import { Box, Button, Typography, CircularProgress, Select, MenuItem, FormControl, InputLabel, Paper, Divider } from "@mui/material";
+import { Box, Button, Typography, CircularProgress, Select, MenuItem, FormControl, InputLabel, Paper, Divider, Slider } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef } from "react";
 import SpeechRecognition, {
@@ -11,6 +11,7 @@ import MicOffIcon from '@mui/icons-material/MicOff';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import HomeIcon from '@mui/icons-material/Home';
+import SpeedIcon from '@mui/icons-material/Speed';
 
 interface Voice {
     id: string;
@@ -29,6 +30,7 @@ export default function StepPage({
     const [isLoading, setIsLoading] = React.useState(false);
     const [voices, setVoices] = React.useState<Voice[]>([]);
     const [selectedVoice, setSelectedVoice] = React.useState('alloy');
+    const [speechSpeed, setSpeechSpeed] = React.useState(1.0);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Fetch available voices
@@ -101,7 +103,8 @@ export default function StepPage({
                 },
                 body: JSON.stringify({ 
                     text: steps[currentStepIndex].text,
-                    voice: selectedVoice
+                    voice: selectedVoice,
+                    speed: speechSpeed
                 }),
             });
 
@@ -141,10 +144,14 @@ export default function StepPage({
                 audioRef.current.src = '';
             }
         };
-    }, [currentStepIndex, selectedVoice]);
+    }, [currentStepIndex, selectedVoice, speechSpeed]);
 
     const handleNewRecipe = () => {
         router.push("/");
+    };
+
+    const handleSpeedChange = (_event: Event, newValue: number | number[]) => {
+        setSpeechSpeed(newValue as number);
     };
 
     return (
@@ -324,6 +331,47 @@ export default function StepPage({
                         }}>
                         {listening ? "Stop Listening" : "Start Listening"}
                     </Button>
+                </Box>
+                
+                <Box sx={{ 
+                    width: "100%", 
+                    mt: 2,
+                    px: 2
+                }}>
+                    <Box sx={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        mb: 1
+                    }}>
+                        <SpeedIcon sx={{ mr: 1, color: "#E87C4B" }} />
+                        <Typography variant="body2" sx={{ color: "#555" }}>
+                            Speech Speed: {speechSpeed.toFixed(1)}x
+                        </Typography>
+                    </Box>
+                    <Slider
+                        value={speechSpeed}
+                        onChange={handleSpeedChange}
+                        min={0.25}
+                        max={4.0}
+                        step={0.25}
+                        marks={[
+                            { value: 0.25, label: '0.25x' },
+                            { value: 1.0, label: '1.0x' },
+                            { value: 2.0, label: '2.0x' },
+                            { value: 4.0, label: '4.0x' }
+                        ]}
+                        sx={{
+                            color: '#E87C4B',
+                            '& .MuiSlider-thumb': {
+                                '&:hover, &.Mui-focusVisible': {
+                                    boxShadow: '0px 0px 0px 8px rgba(232, 124, 75, 0.16)',
+                                },
+                            },
+                            '& .MuiSlider-rail': {
+                                opacity: 0.5,
+                            },
+                        }}
+                    />
                 </Box>
                 
                 {listening && (

@@ -21,7 +21,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { text, voice = 'alloy' } = await request.json();
+    const { text, voice = 'alloy', speed = 1.0 } = await request.json();
 
     if (!text) {
       return NextResponse.json(
@@ -37,11 +37,15 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate speed is within OpenAI's supported range (0.25 to 4.0)
+    const validatedSpeed = Math.max(0.25, Math.min(4.0, speed));
+
     const mp3 = await openai.audio.speech.create({
       model: "tts-1",
       voice: voice as any,
       input: text,
       response_format: "mp3",
+      speed: validatedSpeed,
     });
 
     const buffer = Buffer.from(await mp3.arrayBuffer());
