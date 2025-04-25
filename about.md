@@ -39,6 +39,7 @@ The submit button could have an icon (e.g. a chef’s hat or microphone)
 ## Tech Stack
 
 -   Both frontend and backend: Next.js
-    -   Backend will us the API routes in app/api/TEMP-ROUTE/route.ts
+    -   Frontend will use the app directory structure
+    -   Backend will us the API routes in app/api/ROUTE-NAME/route.ts
 -   Use typescript very well
--   Use Tailwind CSS for styling
+-   Use Material UI for the frontend
