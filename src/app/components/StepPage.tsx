@@ -80,10 +80,22 @@ export default function StepPage({
             continuous: true
         });
     };
+<<<<<<< HEAD
+=======
+    const stopListening = () => {
+        SpeechRecognition.stopListening();
+    };
+    useEffect(() => {
+        startListening();
+        return () => {
+            stopListening();
+        };
+    }, []);
+>>>>>>> 018b05a315d9971b36335c8c4c33a173d44dd94f
 
     const toggleListening = () => {
         if (listening) {
-            SpeechRecognition.stopListening();
+            stopListening();
         } else {
             startListening();
         }
@@ -101,8 +113,13 @@ export default function StepPage({
         speakStep();
     };
 
+<<<<<<< HEAD
     const handleNewResult = React.useCallback((result: string) => {
         const nextKeywords = ["next", "continue", "další", "pokrač"];
+=======
+    const handleNewResult = (result: string) => {
+        const nextKeywords = ["next", "continue", "další", "pokrač", "pak"];
+>>>>>>> 018b05a315d9971b36335c8c4c33a173d44dd94f
         const previousKeywords = [
             "previous",
             "back",
@@ -111,7 +128,14 @@ export default function StepPage({
             "předchozí",
             "předtím"
         ];
-        const repeatKeywords = ["repeat", "again", "opak", "znov"];
+        const repeatKeywords = [
+            "repeat",
+            "again",
+            "opak",
+            "znov",
+            "what",
+            "cože"
+        ];
 
         if (nextKeywords.some((keyword) => result.includes(keyword))) {
             resetTranscript();
